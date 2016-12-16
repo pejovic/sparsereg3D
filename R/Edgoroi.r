@@ -1,8 +1,30 @@
+
 library(rgdal)
-library(aqp)
-library(sp)
 library(GSIF)
+library(gdalUtils)
+library(raster)
 library(plyr)
+library(aqp)
+library(psych)
+library(mda)
+library(classInt)
+library(caret)
+library(MASS)
+library(splines)
+library(glmnet)
+library(hierNet)
+library(magrittr)
+library(doParallel)
+library(foreach)
+library(stargazer)
+library(gstat)
+
+fun.path <- "D:/_R projects/sparsereg3D/R"
+source(paste(fun.path,"stratfold3d.r",sep="/"))
+source(paste(fun.path,"pre.sparsereg3D.r",sep="/"))
+source(paste(fun.path,"sparsereg3D.ncv.r",sep="/"))
+source(paste(fun.path,"sparsereg3D.pred.r",sep="/"))
+source(paste(fun.path,"sparsereg3D.sel.r",sep="/"))
 
 
 
@@ -24,22 +46,32 @@ str(edgeroi.grids100)
 gridded(edgeroi.grids100) <- ~x+y
 proj4string(edgeroi.grids100) <- CRS("+init=epsg:28355")
 
-stack100m <- stack(edgeroi.grids100)
-str(stack100m)
+# Categorical grids
+cat.100.stack <- stack(edgeroi.grids100[c("LNUABS6")])
+# Continual grids
+con.100.stack <- stack(edgeroi.grids100[c("MVBSRT6", "TI1LAN6","TI2LAN6", "PCKGAD6", "RUTGAD6" ,"PCTGAD6")])
 
-stack250new <- resample(stack100m, stack250m, method = "ngb")
+e <- extent(edgeroi.grids)
 
-edgeroi.grids100 <- as(stack250new,"SpatialPixelsDataFrame")
-str(edgeroi.grids100)
+cat.100.stack <- crop(cat.100.stack, e)
+con.100.stack <- crop(con.100.stack, e)
 
-edgeroi.grids100$LNUABS6 <- factor(edgeroi.grids100$LNUABS6)
+con.250.stack <- resample(con.100.stack, stack250m, method = "bilinear")
+cat.250.stack <- resample(cat.100.stack, stack250m, method = "ngb")
 
-edgeroi.grids@data <- data.frame(edgeroi.grids@data, edgeroi.grids100@data) 
+grids250 <- stack(con.250.stack, cat.250.stack, stack250m)
+names(grids250)
 
+cov.maps <- as(grids250, "SpatialPixelsDataFrame")
 
+factors <- c("PMTGEO5", "LNUABS6")
+f <- colwise(as.factor, .cols = factors)
 
+cov.maps@data[,factors] <- f(cov.maps@data[,factors])
 
+str(cov.maps)
 
+# Data
 edgeroi$horizons <- rename(edgeroi$horizons, c("UHDICM"="Top", "LHDICM"="Bottom", "SOURCEID" = "ID"))
 edgeroi$sites <- rename(edgeroi$sites, c("SOURCEID" = "ID"))
 sites <- edgeroi$sites
@@ -57,47 +89,41 @@ proj4string(edgeroi.spc) <- CRS(proj4string(edgeroi.grids))
 
 str(edgeroi.spc)
 
-glm.formulaString <- as.formula(paste(paste("PHIHO5 ~ "), paste(c(names(edgeroi.grids),"depth"), collapse="+")))
-glm.formulaString
+#formula
+formulaString <- as.formula(paste(paste("ORCDRC ~ "), paste(c(names(cov.maps),"depth"), collapse="+")))
+formulaString
 
+#sparsereg3D
+# ORC results
+BaseL.ORC.preproc <- pre.sparsereg3D(base.model = formulaString, use.hier = FALSE, profiles = edgeroi.spc, use.interactions = FALSE, poly.deg = 1, num.folds = 10, num.means = 3, cov.grids = cov.maps)    
+BaseL.ORC.ncv.time <- system.time(BaseL.ORC.ncv <- sparsereg3D.ncv(sparse.reg = BaseL.ORC.preproc, lambda = seq(0,5,0.1), seed = 321))
+BaseL.ORC.time <- system.time(BaseL.ORC <- sparsereg3D.sel(sparse.reg = BaseL.ORC.preproc ,lambda = seq(0,5,0.1), seed = 321))
+#ORC.l.pred <- sparsereg3D.pred(model.info = BaseL.ORC, chunk.size = 20000, grids = cov.maps, depths = c(-0.1,-0.2,-0.3))
 
-# SOM results
-BaseL.SOM.preproc <- pre.sparsereg3D(base.model = glm.formulaString, use.hier = FALSE, profiles = edgeroi.spc, use.interactions = FALSE, poly.deg = 1, num.folds = 5, num.means = 3, cov.grids = edgeroi.grids)    
-BaseL.SOM.ncv.time <- system.time(BaseL.SOM.ncv <- sparsereg3D.ncv(sparse.reg = BaseL.SOM.preproc, lambda = seq(0,5,0.1), seed = 321))
-BaseL.SOM.time <- system.time(BaseL.SOM <- sparsereg3D.sel(sparse.reg = BaseL.SOM.preproc ,lambda = seq(0,5,0.1), seed = 321))
-#SOM.l.pred <- sparsereg3D.pred(model.info = BaseL.SOM, chunk.size = 20000, grids = edgeroi.grids, depths = c(-0.1,-0.2,-0.3))
+BaseP.ORC.preproc <- pre.sparsereg3D(base.model = formulaString, use.hier = FALSE, profiles = edgeroi.spc, use.interactions = FALSE, poly.deg = 2, num.folds = 10, num.means = 3, cov.grids = cov.maps)    
+BaseP.ORC.ncv.time <- system.time(BaseP.ORC.ncv <- sparsereg3D.ncv(sparse.reg = BaseP.ORC.preproc, lambda = seq(0,5,0.1), seed = 321))
+BaseP.ORC.time <- system.time(BaseP.ORC <- sparsereg3D.sel(sparse.reg = BaseP.ORC.preproc ,lambda = seq(0,5,0.1), seed = 321))
+#ORC.p.pred <- sparsereg3D.pred(model.info = ORC.p.sel, chunk.size = 20000, grids = cov.maps, depths = c(-0.1,-0.2,-0.3))
 
-BaseP.SOM.preproc <- pre.sparsereg3D(base.model = glm.formulaString, use.hier = FALSE, profiles = edgeroi.spc, use.interactions = FALSE, poly.deg = 3, num.folds = 5, num.means = 3, cov.grids = edgeroi.grids)    
-BaseP.SOM.ncv.time <- system.time(BaseP.SOM.ncv <- sparsereg3D.ncv(sparse.reg = BaseP.SOM.preproc, lambda = seq(0,5,0.1), seed = 321))
-BaseP.SOM.time <- system.time(BaseP.SOM <- sparsereg3D.sel(sparse.reg = BaseP.SOM.preproc ,lambda = seq(0,5,0.1), seed = 321))
-#SOM.p.pred <- sparsereg3D.pred(model.info = SOM.p.sel, chunk.size = 20000, grids = edgeroi.grids, depths = c(-0.1,-0.2,-0.3))
+IntL.ORC.preproc <- pre.sparsereg3D(base.model = formulaString, use.hier = FALSE, profiles = edgeroi.spc, use.interactions = TRUE, poly.deg = 1, num.folds = 10, num.means = 3, cov.grids = cov.maps)    
+IntL.ORC.ncv.time <- system.time(IntL.ORC.ncv <- sparsereg3D.ncv(sparse.reg = IntL.ORC.preproc, lambda = seq(0,5,0.1), seed = 321))
+IntL.ORC.time <- system.time(IntL.ORC <- sparsereg3D.sel(sparse.reg = IntL.ORC.preproc ,lambda = seq(0,5,0.1), seed = 321))
+#ORC.l.pred <- sparsereg3D.pred(model.info = IntL.ORC, chunk.size = 20000, grids = cov.maps, depths = c(-0.1,-0.2,-0.3))
 
+IntP.ORC.preproc <- pre.sparsereg3D(base.model = formulaString, use.hier = FALSE, profiles = edgeroi.spc, use.interactions = TRUE, poly.deg = 2, num.folds = 10, num.means = 3, cov.grids = cov.maps)    
+IntP.ORC.ncv.time <- system.time(IntP.ORC.ncv <- sparsereg3D.ncv(sparse.reg = IntP.ORC.preproc, lambda = seq(0,5,0.1), seed = 321))
+IntP.ORC.time <- system.time(IntP.ORC <- sparsereg3D.sel(sparse.reg = IntP.ORC.preproc ,lambda = seq(0,5,0.1), seed = 321))
+#ORC.l.pred <- sparsereg3D.pred(model.info = IntP.ORC, chunk.size = 20000, grids = cov.maps, depths = c(-0.1,-0.2,-0.3))
 
-IntL.SOM.preproc <- pre.sparsereg3D(base.model = glm.formulaString, use.hier = FALSE, profiles = edgeroi.spc, use.interactions = TRUE, poly.deg = 1, num.folds = 5, num.means = 3, cov.grids = edgeroi.grids)    
-IntL.SOM.ncv.time <- system.time(IntL.SOM.ncv <- sparsereg3D.ncv(sparse.reg = IntL.SOM.preproc, lambda = seq(0,5,0.1), seed = 321))
-IntL.SOM.time <- system.time(IntL.SOM <- sparsereg3D.sel(sparse.reg = IntL.SOM.preproc ,lambda = seq(0,5,0.1), seed = 321))
-#SOM.l.pred <- sparsereg3D.pred(model.info = IntL.SOM, chunk.size = 20000, grids = edgeroi.grids, depths = c(-0.1,-0.2,-0.3))
+IntHL.ORC.preproc <- pre.sparsereg3D(base.model = formulaString, use.hier = TRUE, profiles = edgeroi.spc, use.interactions = TRUE, poly.deg = 1, num.folds = 10, num.means = 3, cov.grids = cov.maps)    
+IntHL.ORC.ncv.time <- system.time(IntHL.ORC.ncv <- sparsereg3D.ncv(sparse.reg = IntHL.ORC.preproc, lambda = seq(0,5,0.1), seed = 321))
+IntL.ORC.time <- system.time(IntHL.ORC <- sparsereg3D.sel(sparse.reg = IntHL.ORC.preproc ,lambda = seq(0,5,0.1), seed = 321))
+#ORC.l.pred <- sparsereg3D.pred(model.info = IntHL.ORC, chunk.size = 20000, grids = cov.maps, depths = c(-0.1,-0.2,-0.3))
 
-IntP.SOM.preproc <- pre.sparsereg3D(base.model = glm.formulaString, use.hier = FALSE, profiles = edgeroi.spc, use.interactions = TRUE, poly.deg = 3, num.folds = 5, num.means = 3, cov.grids = edgeroi.grids)    
-IntP.SOM.ncv.time <- system.time(IntP.SOM.ncv <- sparsereg3D.ncv(sparse.reg = IntP.SOM.preproc, lambda = seq(0,5,0.1), seed = 321))
-IntP.SOM.time <- system.time(IntP.SOM <- sparsereg3D.sel(sparse.reg = IntP.SOM.preproc ,lambda = seq(0,5,0.1), seed = 321))
-#SOM.l.pred <- sparsereg3D.pred(model.info = IntP.SOM, chunk.size = 20000, grids = edgeroi.grids, depths = c(-0.1,-0.2,-0.3))
+IntHP.ORC.preproc <- pre.sparsereg3D(base.model = formulaString, use.hier = TRUE, profiles = edgeroi.spc, use.interactions = TRUE, poly.deg = 2, num.folds = 10, num.means = 3, cov.grids = cov.maps)    
+IntHP.ORC.ncv.time <- system.time(IntHP.ORC.ncv <- sparsereg3D.ncv(sparse.reg = IntHP.ORC.preproc, lambda = seq(0,5,0.1), seed = 321))
+IntHP.ORC.time <- system.time(IntHP.ORC <- sparsereg3D.sel(sparse.reg = IntHP.ORC.preproc ,lambda = seq(0,5,0.1), seed = 321))
+#ORC.l.pred <- sparsereg3D.pred(model.info = IntHP.ORC, chunk.size = 20000, grids = edgeroi.grids, depths = c(-0.1,-0.2,-0.3))
 
-IntHL.SOM.preproc <- pre.sparsereg3D(base.model = glm.formulaString, use.hier = TRUE, profiles = edgeroi.spc, use.interactions = TRUE, poly.deg = 1, num.folds = 5, num.means = 3, cov.grids = edgeroi.grids)    
-IntHL.SOM.ncv.time <- system.time(IntHL.SOM.ncv <- sparsereg3D.ncv(sparse.reg = IntHL.SOM.preproc, lambda = seq(0,5,0.1), seed = 321))
-IntL.SOM.time <- system.time(IntHL.SOM <- sparsereg3D.sel(sparse.reg = IntHL.SOM.preproc ,lambda = seq(0,5,0.1), seed = 321))
-#SOM.l.pred <- sparsereg3D.pred(model.info = IntHL.SOM, chunk.size = 20000, grids = edgeroi.grids, depths = c(-0.1,-0.2,-0.3))
-
-IntHP.SOM.preproc <- pre.sparsereg3D(base.model = glm.formulaString, use.hier = TRUE, profiles = edgeroi.spc, use.interactions = TRUE, poly.deg = 3, num.folds = 5, num.means = 3, cov.grids = edgeroi.grids)    
-IntHP.SOM.ncv.time <- system.time(IntHP.SOM.ncv <- sparsereg3D.ncv(sparse.reg = IntHP.SOM.preproc, lambda = seq(0,5,0.1), seed = 321))
-IntHP.SOM.time <- system.time(IntHP.SOM <- sparsereg3D.sel(sparse.reg = IntHP.SOM.preproc ,lambda = seq(0,5,0.1), seed = 321))
-#SOM.l.pred <- sparsereg3D.pred(model.info = IntHP.SOM, chunk.size = 20000, grids = edgeroi.grids, depths = c(-0.1,-0.2,-0.3))
-
-
-
-
-download.file("http://gsif.isric.org/zipped/NL250m_covs.zip", "NL250m_covs.zip")
-library(R.utils)
-unzip("NL250m_covs.zip")
 
 

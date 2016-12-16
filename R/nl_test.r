@@ -1,9 +1,4 @@
 
-
-path <- "C:/Users/Milutin/Dropbox/Extensions of soil 3D trend models/Data and Scripts/sparsereg/NL"
-setwd(paste(path))
-
-
 library(rgdal)
 library(GSIF)
 library(gdalUtils)
@@ -25,7 +20,7 @@ library(stargazer)
 library(gstat)
 
 # load functions
-fun.path <- "C:/Users/Milutin/Dropbox/Extensions of soil 3D trend models/Data and Scripts/sparsereg"
+fun.path <- "D:/_R projects/sparsereg3D/R"
 source(paste(fun.path,"stratfold3d.r",sep="/"))
 source(paste(fun.path,"pre.sparsereg3D.r",sep="/"))
 source(paste(fun.path,"sparsereg3D.ncv.r",sep="/"))
