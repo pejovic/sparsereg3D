@@ -1,8 +1,6 @@
 # Napisati nesto ovde
 #
 #
-path <- "C:/Users/Milutin/Dropbox/Extensions of soil 3D trend models/Data and Scripts/sparsereg"
-setwd(paste(path))
 path1 <- "C:/Users/Milutin/Dropbox/Extensions of soil 3D trend models/Data and Scripts"
 
 
@@ -30,11 +28,12 @@ library(gstat)
 load(paste(path1,"BorData.rda",sep = "/"))
 load(paste(path1,"covmaps.rda",sep = "/"))
 
-source(paste(getwd(),"stratfold3d.r",sep="/"))
-source(paste(getwd(),"pre.sparsereg3D.r",sep="/"))
-source(paste(getwd(),"sparsereg3D.ncv.r",sep="/"))
-source(paste(getwd(),"sparsereg3D.pred.r",sep="/"))
-source(paste(getwd(),"sparsereg3D.sel.r",sep="/"))
+fun.path <- "D:/_R projects/sparsereg3D/R"
+source(paste(fun.path,"stratfold3d.r",sep="/"))
+source(paste(fun.path,"pre.sparsereg3D.r",sep="/"))
+source(paste(fun.path,"sparsereg3D.ncv.r",sep="/"))
+source(paste(fun.path,"sparsereg3D.pred.r",sep="/"))
+source(paste(fun.path,"sparsereg3D.sel.r",sep="/"))
 
 #================== Spatial references ===============================================================
 gk_7 <- "+proj=tmerc +lat_0=0 +lon_0=21 +k=0.9999 +x_0=7500000 +y_0=0 +ellps=bessel +towgs84=574.027,170.175,401.545,4.88786,-0.66524,-13.24673,0.99999311067 +units=m"
