@@ -20,7 +20,7 @@ library(stargazer)
 library(gstat)
 
 # load functions
-fun.path <- "D:/_R projects/sparsereg3D/R"
+fun.path <- paste(getwd(), "R", sep = "/")
 source(paste(fun.path,"stratfold3d.r",sep="/"))
 source(paste(fun.path,"pre.sparsereg3D.r",sep="/"))
 source(paste(fun.path,"sparsereg3D.ncv.r",sep="/"))
@@ -30,26 +30,26 @@ source(paste(fun.path,"sparsereg3D.sel.r",sep="/"))
 
 #list modis files
 
-modis.list<- dir(path=paste(getwd(), "NL250m_covs","MODIS", sep = "/"), pattern=glob2rx("*.tif"), full.names=FALSE)
+modis.list<- dir(path=paste(getwd(), "data", "NL", "NL250m_covs","MODIS", sep = "/"), pattern=glob2rx("*.tif"), full.names=FALSE)
 
-modis <- readGDAL(paste(getwd(), "NL250m_covs","MODIS", modis.list[1],sep="/"))
+modis <- readGDAL(paste(getwd(),"data", "NL", "NL250m_covs","MODIS", modis.list[1],sep="/"))
 names(modis)[1]<-sub(".tif","",modis.list[1])
 
 for(i in modis.list[-1]){
-  modis@data[sub(".tif","",i[1])] <- readGDAL(paste(getwd(), "NL250m_covs","MODIS",paste(i),sep="/"))$band1
+  modis@data[sub(".tif","",i[1])] <- readGDAL(paste(getwd(),"data", "NL", "NL250m_covs","MODIS",paste(i),sep="/"))$band1
 }
 
 # Other grids
 
 #list files
-grid.list<- dir(path=paste(getwd(), "NL250m_covs", sep = "/"), pattern=glob2rx("*.tif"), full.names=FALSE)
+grid.list<- dir(path=paste(getwd(), "data", "NL", "NL250m_covs", sep = "/"), pattern=glob2rx("*.tif"), full.names=FALSE)
 
 # Read grids into R:
-gridmaps <- readGDAL(paste(getwd(), "NL250m_covs",grid.list[1],sep="/"))
+gridmaps <- readGDAL(paste(getwd(), "data", "NL", "NL250m_covs",grid.list[1],sep="/"))
 names(gridmaps)[1]<-sub(".tif","",grid.list[1])
 
 for(i in grid.list[-c(1,8)]){
-  gridmaps@data[sub(".tif","",i[1])] <- readGDAL(paste(getwd(), "NL250m_covs",paste(i),sep="/"))$band1
+  gridmaps@data[sub(".tif","",i[1])] <- readGDAL(paste(getwd(), "data", "NL", "NL250m_covs",paste(i),sep="/"))$band1
 }
 
 proj4string(gridmaps) <- CRS(proj4string(modis))
@@ -57,7 +57,7 @@ str(gridmaps)
 
 # DEM 
 
-srtm <- readGDAL(paste(getwd(), "NL250m_covs",grid.list[8],sep="/"))
+srtm <- readGDAL(paste(getwd(), "data", "NL", "NL250m_covs",grid.list[8],sep="/"))
 names(srtm)[1] <- sub(".tif","",grid.list[8])
 proj4string(srtm) <- CRS(proj4string(modis))
 str(srtm)
@@ -93,7 +93,7 @@ cov.maps@data[,factors] <- f(cov.maps@data[,factors])
 str(cov.maps)
 #Data
 
-nl.profiles <- read.csv("nl_data.csv", header = TRUE)
+nl.profiles <- read.csv(paste(getwd(), "data", "NL", "nl_data.csv", sep="/"), header = TRUE)
 names(nl.profiles) <- c("ID", "SAMPLEID", "x", "y", "Top",   "Bottom",   "ORCDRC" ,  "BLD")
 #nl.profiles <- transform(nl.profiles, ID=as.numeric(factor(x)))
 nl.profiles$ORCDRC <- pmax(nl.profiles$ORCDRC, 0.1)
