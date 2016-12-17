@@ -80,7 +80,7 @@ stacksrtm <- crop(stacksrtm, e)
 stack.con.grids <- resample(stack.con.grids, stackmodis, method = "bilinear")
 stack.cat.grids <- resample(stack.cat.grids, stackmodis, method = "ngb")
 
-grids250 <- stack(stack.con.grids, stack.cat.grids, srtm, stackmodis)
+grids250 <- stack(stack.con.grids, stack.cat.grids, stacksrtm, stackmodis)
 names(grids250)
 cov.maps <- as(grids250, "SpatialPixelsDataFrame")
 
