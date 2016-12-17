@@ -1,4 +1,6 @@
 
+path <- "C:/Users/Milutin/Dropbox/Extensions of soil 3D trend models/Data and Scripts/sparsereg/NL"
+
 library(rgdal)
 library(GSIF)
 library(gdalUtils)
@@ -30,67 +32,65 @@ source(paste(fun.path,"sparsereg3D.sel.r",sep="/"))
 
 #list modis files
 
-modis.list<- dir(path=paste(getwd(), "data", "NL", "NL250m_covs","MODIS", sep = "/"), pattern=glob2rx("*.tif"), full.names=FALSE)
+modis.list<- dir(path=paste(path, "NL250m_covs","MODIS", sep = "/"), pattern=glob2rx("*.tif"), full.names=FALSE)
 
-modis <- readGDAL(paste(getwd(),"data", "NL", "NL250m_covs","MODIS", modis.list[1],sep="/"))
+modis <- readGDAL(paste(path, "NL250m_covs","MODIS", modis.list[1],sep="/"))
 names(modis)[1]<-sub(".tif","",modis.list[1])
 
 for(i in modis.list[-1]){
-  modis@data[sub(".tif","",i[1])] <- readGDAL(paste(getwd(),"data", "NL", "NL250m_covs","MODIS",paste(i),sep="/"))$band1
+  modis@data[sub(".tif","",i[1])] <- readGDAL(paste(path, "NL250m_covs","MODIS",paste(i),sep="/"))$band1
 }
 
 # Other grids
 
 #list files
-grid.list<- dir(path=paste(getwd(), "data", "NL", "NL250m_covs", sep = "/"), pattern=glob2rx("*.tif"), full.names=FALSE)
+grid.list<- dir(path=paste(path, "NL250m_covs", sep = "/"), pattern=glob2rx("*.tif"), full.names=FALSE)
 
 # Read grids into R:
-gridmaps <- readGDAL(paste(getwd(), "data", "NL", "NL250m_covs",grid.list[1],sep="/"))
+gridmaps <- readGDAL(paste(path, "NL250m_covs",grid.list[1],sep="/"))
 names(gridmaps)[1]<-sub(".tif","",grid.list[1])
 
 for(i in grid.list[-c(1,8)]){
-  gridmaps@data[sub(".tif","",i[1])] <- readGDAL(paste(getwd(), "data", "NL", "NL250m_covs",paste(i),sep="/"))$band1
+  gridmaps@data[sub(".tif","",i[1])] <- readGDAL(paste(path, "NL250m_covs",paste(i),sep="/"))$band1
 }
 
 proj4string(gridmaps) <- CRS(proj4string(modis))
 str(gridmaps)
 
 # DEM 
-
-srtm <- readGDAL(paste(getwd(), "data", "NL", "NL250m_covs",grid.list[8],sep="/"))
+srtm <- readGDAL(paste(path, "NL250m_covs",grid.list[8],sep="/"))
 names(srtm)[1] <- sub(".tif","",grid.list[8])
 proj4string(srtm) <- CRS(proj4string(modis))
 str(srtm)
 
-# Rasample
-stackmodis <- stack(modis)
+# Rasample grids
+
 # Categorical grids
 stack.cat.grids <- stack(gridmaps[c("geomorfology", "landcover1970", "landcover1992", "landcover2004", "soilmap", "groundwater")])
 # Continual grids
 stack.con.grids <- stack(gridmaps[c("relativeElevation")])
-
-stacksrtm <- stack(srtm)
+stackmodis <- stack(modis)
+stacksrtm <- raster(srtm)
 
 e <- extent(stack.con.grids)
 
 stackmodis <- crop(stackmodis, e)
 stacksrtm <- crop(stacksrtm, e)
 
-
 stack.con.grids <- resample(stack.con.grids, stackmodis, method = "bilinear")
 stack.cat.grids <- resample(stack.cat.grids, stackmodis, method = "ngb")
 
 grids250 <- stack(stack.con.grids, stack.cat.grids, srtm, stackmodis)
 names(grids250)
-
 cov.maps <- as(grids250, "SpatialPixelsDataFrame")
+
 
 factors <- c("geomorfology", "landcover1970", "landcover1992", "landcover2004", "soilmap", "groundwater")
 f <- colwise(as.factor, .cols = factors)
-
 cov.maps@data[,factors] <- f(cov.maps@data[,factors])
 
 str(cov.maps)
+
 #Data
 
 nl.profiles <- read.csv(paste(getwd(), "data", "NL", "nl_data.csv", sep="/"), header = TRUE)
@@ -150,6 +150,58 @@ IntHP.ORC.time <- system.time(IntHP.ORC <- sparsereg3D.sel(sparse.reg = IntHP.OR
 #ORC.l.pred <- sparsereg3D.pred(model.info = IntHP.ORC, chunk.size = 20000, grids = cov.maps, depths = c(-0.1,-0.2,-0.3))
 
 
+#Results
+ll <- length(IntL.ORC$coefficients)
+pp <- length(IntHL.ORC$coefficients[,1])+1
+
+cmL.ORC <- data.frame(variable=IntHL.ORC$coefficients[,1], BaseL.ORC.me=BaseL.ORC$coefficients[2:pp], IntL.ORC.me=IntL.ORC$coefficients[2:pp],IntL.ORC.ie=c(IntL.ORC$coefficients[(pp+1):ll],0),IntHL.ORC.me=IntHL.ORC$coefficients[,2],IntHL.ORC.ie=IntHL.ORC$coefficients[,3] )
 
 
+#============================= Coefficients for models with polynomial depth function ===========================================================
+l <- length(IntP.ORC$coefficients)
+p <- length(IntHP.ORC$coefficients[,1])+1
+i1 <- seq(1,l-p,3)
+i2 <- seq(2,l-p,3)
+i3 <- seq(3,l-p,3)
 
+cmP.ORC <- data.frame(variable=IntHP.ORC$coefficients[,1], BaseP.ORC.me=BaseP.ORC$coefficients[2:p], IntP.ORC.me=IntP.ORC$coefficients[2:p],IntP.ORC.ie1=c(IntP.ORC$coefficients[(p+1):l][i1],0,0,0),IntP.ORC.ie2=c(IntP.ORC$coefficients[(p+1):l][i2],0,0,0),IntP.ORC.ie3=c(IntP.ORC$coefficients[(p+1):l][i3],0,0,0),IntHP.ORC.me=IntHP.ORC$coefficients[,2],IntHP.ORC.ie1=IntHP.ORC$coefficients[,3],IntHP.ORC.ie2=IntHP.ORC$coefficients[,4],IntHP.ORC.ie3=IntHP.ORC$coefficients[,5] )
+cmORC <- cmP.ORC[,c(1,7:10)]
+
+# Models comparison
+ORC.ncv <- data.frame(rbind(BaseL = BaseL.ORC.ncv, BaseP = BaseP.ORC.ncv, IntL = IntL.ORC.ncv, IntP = IntP.ORC.ncv, IntHL = IntHL.ORC.ncv, IntHP = IntHP.ORC.ncv))
+ORC.ncv <- data.frame(Model = rownames(ORC.ncv), ORC.ncv)
+rownames(ORC.ncv) <- NULL
+names(ORC.ncv) <- c("Model","RMSE","R squared")
+stargazer(ORC.ncv, summary = FALSE, digits = 2, type = "text")
+
+#Time table
+
+ORC.ncv.time <- rbind(BaseL.ORC.ncv.time, BaseP.ORC.ncv.time, IntL.ORC.ncv.time, IntP.ORC.ncv.time, IntHL.ORC.ncv.time, IntHP.ORC.ncv.time)
+ORC.time <- rbind(BaseL.ORC.time, BaseP.ORC.time, IntL.ORC.time, IntP.ORC.time, IntHL.ORC.time, IntHP.ORC.time)
+
+#Number of coefficients
+
+n.coeffs <- function(l.coeffs,p.coeffs){
+  BaseL <- data.frame(l.coeffs[,2])
+  IntL <- l.coeffs[,3:4]
+  IntHL <- l.coeffs[,5:6]
+  BaseP <- data.frame(p.coeffs[,2])
+  IntP <- p.coeffs[,3:6]
+  IntHP <- p.coeffs[,7:10]
+  
+  n.BaseL <-  data.frame(total = prod(dim(BaseL)), selected = sum(BaseL!=0 ), "main effects" = sum(BaseL!=0 ), "interaction effects" = 0 )
+  n.IntL <-   data.frame(total = prod(dim(IntL)),  selected = sum(apply(IntL,2, function(y) sum(y!=0))), "main effects" = apply(IntL,2, function(y) sum(y!=0))[1], "interaction effects" = apply(IntL,2, function(y) sum(y!=0))[2])
+  n.IntHL <-   data.frame(total = prod(dim(IntHL)),  selected = sum(apply(IntHL,2, function(y) sum(y!=0))), "main effects" = apply(IntHL,2, function(y) sum(y!=0))[1], "interaction effects" = apply(IntHL,2, function(y) sum(y!=0))[2])
+  
+  n.BaseP <-  data.frame(total = prod(dim(BaseP)), selected = sum(BaseP!=0 ), "main effects" = sum(BaseP!=0 ), "interaction effects" = 0 )
+  n.IntP <-   data.frame(total = prod(dim(IntP)),  selected = sum(apply(IntP,2, function(y) sum(y!=0))), "main effects" = apply(IntP,2, function(y) sum(y!=0))[1], "interaction effects" = sum(apply(IntP,2, function(y) sum(y!=0))[2:4]))
+  n.IntHP <-   data.frame(total = prod(dim(IntHP)),  selected = sum(apply(IntHP,2, function(y) sum(y!=0))), "main effects" = apply(IntHP,2, function(y) sum(y!=0))[1], "interaction effects" = sum(apply(IntHP,2, function(y) sum(y!=0))[2:4]))
+  
+  
+  total <- data.frame(rbind(n.BaseL,n.BaseP,n.IntL,n.IntHL,n.IntP,n.IntHP))
+  rownames(total) <- NULL
+  total <- cbind(model = c("BaseL","BaseP", "IntL","IntHL", "IntP","IntHP"), total)
+  return(total)
+}
+
+ORC.n.coeffs <- n.coeffs(l.coeffs = cmL.ORC, p.coeffs = cmP.ORC)
