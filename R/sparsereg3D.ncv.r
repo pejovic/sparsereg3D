@@ -80,7 +80,7 @@ sparsereg3D.ncv <- function(sparse.reg, lambda, seed = 321){
       # Inner crossvalidation loop with model selection
       hier.path <- hierNet.path(training.main.effects, training.target, zz = training.int.effects, diagonal = FALSE, strong = TRUE, trace = 0, stand.main = FALSE, stand.int = FALSE)
       hier.lasso.cv <- hierNet.cv(hier.path, training.main.effects, training.target, folds = inner.obs.fold.list, trace=0)
-      final.hier.model <- hierNet(training.main.effects, training.target, zz = training.int.effects, diagonal=FALSE, strong=TRUE, lam = hier.lasso.cv$lamhat)
+      final.hier.model <- hierNet(training.main.effects, training.target, zz = training.int.effects, diagonal=FALSE, strong=TRUE, lam = hier.lasso.cv$lamhat, center = TRUE, stand.main = FALSE, stand.int = FALSE)
       
       # Prediction on test set
       test.pred <- predict(final.hier.model, newx = test.main.effects, newzz = test.int.effects) 
