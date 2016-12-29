@@ -233,17 +233,18 @@ n.coeffs <- function(l.coeffs,p.coeffs){
   n.IntHP <-   data.frame(total = prod(dim(IntHP)),  selected = sum(apply(IntHP,2, function(y) sum(y!=0))), "main effects" = apply(IntHP,2, function(y) sum(y!=0))[1], "interaction effects" = sum(apply(IntHP,2, function(y) sum(y!=0))[2:4]))
   
   
-  total <- data.frame(rbind(n.BaseL,n.BaseP,n.IntL,n.IntHL,n.IntP,n.IntHP))
+  total <- data.frame(rbind(n.BaseL,n.BaseP,n.IntL,n.IntP,n.IntHL,n.IntHP))
   rownames(total) <- NULL
-  total <- cbind(model = c("BaseL","BaseP", "IntL","IntHL", "IntP","IntHP"), total)
+  total <- cbind(model = c("BaseL","BaseP", "IntL", "IntP","IntHL","IntHP"), total)
   return(total)
 }
 
 ORC.n.coeffs <- n.coeffs(l.coeffs = cmL.ORC, p.coeffs = cmP.ORC)
-save.image(file = "D:/R_projects/nl_ORCDRC.RData")
+#save.image(file = "D:/R_projects/nl_ORCDRC.RData")
 
+load(file = "D:/R_projects/nl_ORCDRC.RData")
 
-rm(list=ls())
+#rm(list=ls())
 
 
 
@@ -491,9 +492,9 @@ n.coeffs <- function(l.coeffs,p.coeffs){
   n.IntHP <-   data.frame(total = prod(dim(IntHP)),  selected = sum(apply(IntHP,2, function(y) sum(y!=0))), "main effects" = apply(IntHP,2, function(y) sum(y!=0))[1], "interaction effects" = sum(apply(IntHP,2, function(y) sum(y!=0))[2:4]))
   
   
-  total <- data.frame(rbind(n.BaseL,n.BaseP,n.IntL,n.IntHL,n.IntP,n.IntHP))
+  total <- data.frame(rbind(n.BaseL,n.BaseP,n.IntL,n.IntP,n.IntHL,n.IntHP))
   rownames(total) <- NULL
-  total <- cbind(model = c("BaseL","BaseP", "IntL","IntHL", "IntP","IntHP"), total)
+  total <- cbind(model = c("BaseL","BaseP", "IntL", "IntP","IntHL","IntHP"), total)
   return(total)
 }
 
@@ -750,15 +751,43 @@ n.coeffs <- function(l.coeffs,p.coeffs){
   n.IntHP <-   data.frame(total = prod(dim(IntHP)),  selected = sum(apply(IntHP,2, function(y) sum(y!=0))), "main effects" = apply(IntHP,2, function(y) sum(y!=0))[1], "interaction effects" = sum(apply(IntHP,2, function(y) sum(y!=0))[2:4]))
   
   
-  total <- data.frame(rbind(n.BaseL,n.BaseP,n.IntL,n.IntHL,n.IntP,n.IntHP))
+  total <- data.frame(rbind(n.BaseL,n.BaseP,n.IntL,n.IntP,n.IntHL,n.IntHP))
   rownames(total) <- NULL
-  total <- cbind(model = c("BaseL","BaseP", "IntL","IntHL", "IntP","IntHP"), total)
+  total <- cbind(model = c("BaseL","BaseP", "IntL", "IntP","IntHL","IntHP"), total)
   return(total)
 }
 
 pH.n.coeffs <- n.coeffs(l.coeffs = cmL.pH, p.coeffs = cmP.pH)
 
+
+
+
 save.image(file = "D:/R_projects/nl_pHKCL.RData")
 
+load(file = "D:/R_projects/result.rda")
+
+IntHL.logORC.preproc <- result[[1]][[1]]
+IntHL.logORC.ncv.time <- result[[1]][[2]] 
+IntHL.logORC.ncv <- result[[1]][[3]]
+IntHL.logORC.time <- result[[1]][[4]]
+IntHL.logORC <- result[[1]][[5]]
+
+IntHP.logORC.preproc <- result[[2]][[1]]
+IntHP.logORC.ncv.time <- result[[2]][[2]] 
+IntHP.logORC.ncv <- result[[2]][[3]]
+IntHP.logORC.time <- result[[2]][[4]]
+IntHP.logORC <- result[[2]][[5]]
+
+IntHL.pH.preproc <- result[[3]][[1]]
+IntHL.pH.ncv.time <- result[[3]][[2]] 
+IntHL.pH.ncv <- result[[3]][[3]]
+IntHL.pH.time <- result[[3]][[4]]
+IntHL.pH <- result[[3]][[5]]
+
+IntHP.pH.preproc <- result[[4]][[1]]
+IntHP.pH.ncv.time <- result[[4]][[2]] 
+IntHP.pH.ncv <- result[[4]][[3]]
+IntHP.pH.time <- result[[4]][[4]]
+IntHP.pH <- result[[4]][[5]]
 
 
