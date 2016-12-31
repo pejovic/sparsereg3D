@@ -55,7 +55,7 @@ pre.sparsereg3D <- function(base.model, profiles, cov.grids, use.hier=FALSE, pol
   profiles$hdepth <- profiles$Bottom - profiles$Top
   
   # Spatial overlay
-  profiles <- profiles[complete.cases(profiles[,c("ID",coord.names,"hdepth","depth",target.name)]),c("ID",target.name,"hdepth",coord.names,"depth")]
+  profiles <- profiles[complete.cases(profiles[,c("ID",coord.names,"hdepth","depth",target.name)]),c("ID","Top","Bottom",target.name,"hdepth",coord.names,"depth")]
   coordinates(profiles) <- ~ x + y
   proj4string(profiles) <- p4s
   profiles <- spTransform(profiles, proj4string(cov.grids))
@@ -70,7 +70,7 @@ pre.sparsereg3D <- function(base.model, profiles, cov.grids, use.hier=FALSE, pol
   # Preparing data input matrix with following columns: "ID", target.name, "hdepth", coord.names, sp.cov.names, "depth" 
   sp.cov.names <- names(ov[,which(names(ov) %in% c(all.vars(base.model)))])
   profiles <- cbind(as.data.frame(profiles), ov[,sp.cov.names])
-  profiles <- profiles[complete.cases(profiles[,all.vars(base.model)]),c("ID",target.name,"hdepth",coord.names, sp.cov.names, "depth")]
+  profiles <- profiles[complete.cases(profiles[,all.vars(base.model)]),c("ID","Top","Bottom",target.name,"hdepth",coord.names, sp.cov.names, "depth")]
   
   # Adding polynomial depth terms in input data matrix, only if poly.deg > 1  
   if(poly.deg > 1){
@@ -81,7 +81,7 @@ pre.sparsereg3D <- function(base.model, profiles, cov.grids, use.hier=FALSE, pol
   
   # Dummy coding
   dummy.par <- dummyVars(as.formula(paste("~", paste(c(all.vars(base.model))[-1], collapse="+"))),profiles,levelsOnly=FALSE) 
-  profiles <- cbind(profiles[,which(colnames(profiles) %in% c("ID","hdepth",target.name,coord.names))], predict(dummy.par, newdata = profiles)) 
+  profiles <- cbind(profiles[,which(colnames(profiles) %in% c("ID","Top","Bottom","hdepth",target.name,coord.names))], predict(dummy.par, newdata = profiles)) 
   
   # Names
   colnames(profiles) <- gsub( "\\_|/|\\-|\"|\\s" , "." , colnames(profiles) ) 

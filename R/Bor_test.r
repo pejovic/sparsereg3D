@@ -35,6 +35,30 @@ source(paste(fun.path,"sparsereg3D.ncv.r",sep="/"))
 source(paste(fun.path,"sparsereg3D.pred.r",sep="/"))
 source(paste(fun.path,"sparsereg3D.sel.r",sep="/"))
 
+n.coeffs <- function(l.coeffs,p.coeffs){
+  BaseL <- data.frame(l.coeffs[,2])
+  IntL <- l.coeffs[,3:4]
+  IntHL <- l.coeffs[,5:6]
+  BaseP <- data.frame(p.coeffs[,2])
+  IntP <- p.coeffs[,3:6]
+  IntHP <- p.coeffs[,7:10]
+  
+  n.BaseL <-  data.frame(total = prod(dim(BaseL)), selected = sum(BaseL!=0 ), "main effects" = sum(BaseL!=0 ), "interaction effects" = 0 )
+  n.IntL <-   data.frame(total = prod(dim(IntL)),  selected = sum(apply(IntL,2, function(y) sum(y!=0))), "main effects" = apply(IntL,2, function(y) sum(y!=0))[1], "interaction effects" = apply(IntL,2, function(y) sum(y!=0))[2])
+  n.IntHL <-   data.frame(total = prod(dim(IntHL)),  selected = sum(apply(IntHL,2, function(y) sum(y!=0))), "main effects" = apply(IntHL,2, function(y) sum(y!=0))[1], "interaction effects" = apply(IntHL,2, function(y) sum(y!=0))[2])
+  
+  n.BaseP <-  data.frame(total = prod(dim(BaseP)), selected = sum(BaseP!=0 ), "main effects" = sum(BaseP!=0 ), "interaction effects" = 0 )
+  n.IntP <-   data.frame(total = prod(dim(IntP)),  selected = sum(apply(IntP,2, function(y) sum(y!=0))), "main effects" = apply(IntP,2, function(y) sum(y!=0))[1], "interaction effects" = sum(apply(IntP,2, function(y) sum(y!=0))[2:4]))
+  n.IntHP <-   data.frame(total = prod(dim(IntHP)),  selected = sum(apply(IntHP,2, function(y) sum(y!=0))), "main effects" = apply(IntHP,2, function(y) sum(y!=0))[1], "interaction effects" = sum(apply(IntHP,2, function(y) sum(y!=0))[2:4]))
+  
+  
+  total <- data.frame(rbind(n.BaseL,n.BaseP,n.IntL,n.IntP,n.IntHL,n.IntHP))
+  rownames(total) <- NULL
+  total <- cbind(model = c("BaseL","BaseP", "IntL","IntP", "IntHL","IntHP"), total)
+  return(total)
+}
+
+
 #================== Spatial references ===============================================================
 gk_7 <- "+proj=tmerc +lat_0=0 +lon_0=21 +k=0.9999 +x_0=7500000 +y_0=0 +ellps=bessel +towgs84=574.027,170.175,401.545,4.88786,-0.66524,-13.24673,0.99999311067 +units=m"
 utm <- "+proj=utm +zone=34 +ellps=GRS80 +towgs84=0.26901,0.18246,0.06872,-0.01017,0.00893,-0.01172,0.99999996031 +units=m"
@@ -112,7 +136,7 @@ ll <- length(IntL.ORCDRC$coefficients)
 pp <- length(IntHL.ORCDRC$coefficients[,1])+1
 
 cmL.ORCDRC <- data.frame(variable=IntHL.ORCDRC$coefficients[,1], BaseL.ORCDRC.me=BaseL.ORCDRC$coefficients[2:pp], IntL.ORCDRC.me=IntL.ORCDRC$coefficients[2:pp],IntL.ORCDRC.ie=c(IntL.ORCDRC$coefficients[(pp+1):ll],0),IntHL.ORCDRC.me=IntHL.ORCDRC$coefficients[,2],IntHL.ORCDRC.ie=IntHL.ORCDRC$coefficients[,3] )
-
+stargazer(cmL.ORCDRC, summary = FALSE, digits = 2, type = "latex")
 
 #============================= Coefficients for models with polynomial depth function ===========================================================
 l <- length(IntP.ORCDRC$coefficients)
@@ -123,6 +147,8 @@ i3 <- seq(3,l-p,3)
 
 cmP.ORCDRC <- data.frame(variable=IntHP.ORCDRC$coefficients[,1], BaseP.ORCDRC.me=BaseP.ORCDRC$coefficients[2:p], IntP.ORCDRC.me=IntP.ORCDRC$coefficients[2:p],IntP.ORCDRC.ie1=c(IntP.ORCDRC$coefficients[(p+1):l][i1],0,0,0),IntP.ORCDRC.ie2=c(IntP.ORCDRC$coefficients[(p+1):l][i2],0,0,0),IntP.ORCDRC.ie3=c(IntP.ORCDRC$coefficients[(p+1):l][i3],0,0,0),IntHP.ORCDRC.me=IntHP.ORCDRC$coefficients[,2],IntHP.ORCDRC.ie1=IntHP.ORCDRC$coefficients[,3],IntHP.ORCDRC.ie2=IntHP.ORCDRC$coefficients[,4],IntHP.ORCDRC.ie3=IntHP.ORCDRC$coefficients[,5] )
 cmORCDRC <- cmP.ORCDRC[,c(1,7:10)]
+
+stargazer(cmP.ORCDRC, summary = FALSE, digits = 2, type = "latex")
 
 # Models comparison
 ORCDRC.ncv <- data.frame(rbind(BaseL = BaseL.ORCDRC.ncv, BaseP = BaseP.ORCDRC.ncv, IntL = IntL.ORCDRC.ncv, IntP = IntP.ORCDRC.ncv, IntHL = IntHL.ORCDRC.ncv, IntHP = IntHP.ORCDRC.ncv))
@@ -137,29 +163,6 @@ ORCDRC.ncv.time <- rbind(BaseL.ORCDRC.ncv.time, BaseP.ORCDRC.ncv.time, IntL.ORCD
 ORCDRC.time <- rbind(BaseL.ORCDRC.time, BaseP.ORCDRC.time, IntL.ORCDRC.time, IntP.ORCDRC.time, IntHL.ORCDRC.time, IntHP.ORCDRC.time)
 
 #Number of coefficients
-
-n.coeffs <- function(l.coeffs,p.coeffs){
-  BaseL <- data.frame(l.coeffs[,2])
-  IntL <- l.coeffs[,3:4]
-  IntHL <- l.coeffs[,5:6]
-  BaseP <- data.frame(p.coeffs[,2])
-  IntP <- p.coeffs[,3:6]
-  IntHP <- p.coeffs[,7:10]
-  
-  n.BaseL <-  data.frame(total = prod(dim(BaseL)), selected = sum(BaseL!=0 ), "main effects" = sum(BaseL!=0 ), "interaction effects" = 0 )
-  n.IntL <-   data.frame(total = prod(dim(IntL)),  selected = sum(apply(IntL,2, function(y) sum(y!=0))), "main effects" = apply(IntL,2, function(y) sum(y!=0))[1], "interaction effects" = apply(IntL,2, function(y) sum(y!=0))[2])
-  n.IntHL <-   data.frame(total = prod(dim(IntHL)),  selected = sum(apply(IntHL,2, function(y) sum(y!=0))), "main effects" = apply(IntHL,2, function(y) sum(y!=0))[1], "interaction effects" = apply(IntHL,2, function(y) sum(y!=0))[2])
-  
-  n.BaseP <-  data.frame(total = prod(dim(BaseP)), selected = sum(BaseP!=0 ), "main effects" = sum(BaseP!=0 ), "interaction effects" = 0 )
-  n.IntP <-   data.frame(total = prod(dim(IntP)),  selected = sum(apply(IntP,2, function(y) sum(y!=0))), "main effects" = apply(IntP,2, function(y) sum(y!=0))[1], "interaction effects" = sum(apply(IntP,2, function(y) sum(y!=0))[2:4]))
-  n.IntHP <-   data.frame(total = prod(dim(IntHP)),  selected = sum(apply(IntHP,2, function(y) sum(y!=0))), "main effects" = apply(IntHP,2, function(y) sum(y!=0))[1], "interaction effects" = sum(apply(IntHP,2, function(y) sum(y!=0))[2:4]))
-  
-  
-  total <- data.frame(rbind(n.BaseL,n.BaseP,n.IntL,n.IntHL,n.IntP,n.IntHP))
-  rownames(total) <- NULL
-  total <- cbind(model = c("BaseL","BaseP", "IntL","IntHL", "IntP","IntHP"), total)
-  return(total)
-}
 
 ORCDRC.n.coeffs <- n.coeffs(l.coeffs = cmL.ORCDRC, p.coeffs = cmP.ORCDRC)
 
@@ -231,29 +234,6 @@ logORCDRC.ncv.time <- rbind(BaseL.logORCDRC.ncv.time, BaseP.logORCDRC.ncv.time, 
 logORCDRC.time <- rbind(BaseL.logORCDRC.time, BaseP.logORCDRC.time, IntL.logORCDRC.time, IntP.logORCDRC.time, IntHL.logORCDRC.time, IntHP.logORCDRC.time)
 
 #Number of coefficients
-
-n.coeffs <- function(l.coeffs,p.coeffs){
-  BaseL <- data.frame(l.coeffs[,2])
-  IntL <- l.coeffs[,3:4]
-  IntHL <- l.coeffs[,5:6]
-  BaseP <- data.frame(p.coeffs[,2])
-  IntP <- p.coeffs[,3:6]
-  IntHP <- p.coeffs[,7:10]
-  
-  n.BaseL <-  data.frame(total = prod(dim(BaseL)), selected = sum(BaseL!=0 ), "main effects" = sum(BaseL!=0 ), "interaction effects" = 0 )
-  n.IntL <-   data.frame(total = prod(dim(IntL)),  selected = sum(apply(IntL,2, function(y) sum(y!=0))), "main effects" = apply(IntL,2, function(y) sum(y!=0))[1], "interaction effects" = apply(IntL,2, function(y) sum(y!=0))[2])
-  n.IntHL <-   data.frame(total = prod(dim(IntHL)),  selected = sum(apply(IntHL,2, function(y) sum(y!=0))), "main effects" = apply(IntHL,2, function(y) sum(y!=0))[1], "interaction effects" = apply(IntHL,2, function(y) sum(y!=0))[2])
-  
-  n.BaseP <-  data.frame(total = prod(dim(BaseP)), selected = sum(BaseP!=0 ), "main effects" = sum(BaseP!=0 ), "interaction effects" = 0 )
-  n.IntP <-   data.frame(total = prod(dim(IntP)),  selected = sum(apply(IntP,2, function(y) sum(y!=0))), "main effects" = apply(IntP,2, function(y) sum(y!=0))[1], "interaction effects" = sum(apply(IntP,2, function(y) sum(y!=0))[2:4]))
-  n.IntHP <-   data.frame(total = prod(dim(IntHP)),  selected = sum(apply(IntHP,2, function(y) sum(y!=0))), "main effects" = apply(IntHP,2, function(y) sum(y!=0))[1], "interaction effects" = sum(apply(IntHP,2, function(y) sum(y!=0))[2:4]))
-  
-  
-  total <- data.frame(rbind(n.BaseL,n.BaseP,n.IntL,n.IntHL,n.IntP,n.IntHP))
-  rownames(total) <- NULL
-  total <- cbind(model = c("BaseL","BaseP", "IntL","IntHL", "IntP","IntHP"), total)
-  return(total)
-}
 
 logORCDRC.n.coeffs <- n.coeffs(l.coeffs = cmL.logORCDRC, p.coeffs = cmP.logORCDRC)
 
@@ -350,9 +330,9 @@ n.coeffs <- function(l.coeffs,p.coeffs){
   n.IntHP <-   data.frame(total = prod(dim(IntHP)),  selected = sum(apply(IntHP,2, function(y) sum(y!=0))), "main effects" = apply(IntHP,2, function(y) sum(y!=0))[1], "interaction effects" = sum(apply(IntHP,2, function(y) sum(y!=0))[2:4]))
   
   
-  total <- data.frame(rbind(n.BaseL,n.BaseP,n.IntL,n.IntHL,n.IntP,n.IntHP))
+  total <- data.frame(rbind(n.BaseL,n.BaseP,n.IntL,n.IntP,n.IntHL,n.IntHP))
   rownames(total) <- NULL
-  total <- cbind(model = c("BaseL","BaseP", "IntL","IntHL", "IntP","IntHP"), total)
+  total <- cbind(model = c("BaseL","BaseP", "IntL","IntP", "IntHL","IntHP"), total)
   return(total)
 }
 
@@ -361,7 +341,7 @@ pH.n.coeffs <- n.coeffs(l.coeffs = cmL.pH, p.coeffs = cmP.pH)
 
 #save(pH.results, file = "pH.results.rda" )
 
-
+load(file = "D:/R_projects/Bor_results_novi.RData" )
 
 
 

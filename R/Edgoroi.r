@@ -100,35 +100,134 @@ formulaString
 
 #sparsereg3D
 # ORC results
-BaseL.ORC.preproc <- pre.sparsereg3D(base.model = formulaString, use.hier = FALSE, profiles = edgeroi.spc, use.interactions = FALSE, poly.deg = 1, num.folds = 5, num.means = 3, cov.grids = cov.maps)    
-BaseL.ORC.ncv.time <- system.time(BaseL.ORC.ncv <- sparsereg3D.ncv(sparse.reg = BaseL.ORC.preproc, lambda = seq(0,5,0.1), seed = 321))
-BaseL.ORC.time <- system.time(BaseL.ORC <- sparsereg3D.sel(sparse.reg = BaseL.ORC.preproc ,lambda = seq(0,5,0.1), seed = 321))
+BaseL.ORC.preproc <- pre.sparsereg3D(base.model = formulaString, use.hier = FALSE, profiles = edgeroi.spc, use.interactions = FALSE, poly.deg = 1, num.folds = 5, num.means = 3, cov.grids = cov.maps, seed=999)    
+BaseL.ORC.ncv.time <- system.time(BaseL.ORC.ncv <- sparsereg3D.ncv(sparse.reg = BaseL.ORC.preproc, lambda = seq(0,5,0.1), seed = 999))
+BaseL.ORC.time <- system.time(BaseL.ORC <- sparsereg3D.sel(sparse.reg = BaseL.ORC.preproc ,lambda = seq(0,5,0.1), seed = 999))
 #ORC.l.pred <- sparsereg3D.pred(model.info = BaseL.ORC, chunk.size = 20000, grids = cov.maps, depths = c(-0.1,-0.2,-0.3))
 
-BaseP.ORC.preproc <- pre.sparsereg3D(base.model = formulaString, use.hier = FALSE, profiles = edgeroi.spc, use.interactions = FALSE, poly.deg = 3, num.folds = 5, num.means = 3, cov.grids = cov.maps)    
-BaseP.ORC.ncv.time <- system.time(BaseP.ORC.ncv <- sparsereg3D.ncv(sparse.reg = BaseP.ORC.preproc, lambda = seq(0,5,0.1), seed = 321))
-BaseP.ORC.time <- system.time(BaseP.ORC <- sparsereg3D.sel(sparse.reg = BaseP.ORC.preproc ,lambda = seq(0,5,0.1), seed = 321))
+BaseP.ORC.preproc <- pre.sparsereg3D(base.model = formulaString, use.hier = FALSE, profiles = edgeroi.spc, use.interactions = FALSE, poly.deg = 3, num.folds = 5, num.means = 3, cov.grids = cov.maps, seed=999)    
+BaseP.ORC.ncv.time <- system.time(BaseP.ORC.ncv <- sparsereg3D.ncv(sparse.reg = BaseP.ORC.preproc, lambda = seq(0,5,0.1), seed = 999))
+BaseP.ORC.time <- system.time(BaseP.ORC <- sparsereg3D.sel(sparse.reg = BaseP.ORC.preproc ,lambda = seq(0,5,0.1), seed = 999))
 #ORC.p.pred <- sparsereg3D.pred(model.info = ORC.p.sel, chunk.size = 20000, grids = cov.maps, depths = c(-0.1,-0.2,-0.3))
 
-IntL.ORC.preproc <- pre.sparsereg3D(base.model = formulaString, use.hier = FALSE, profiles = edgeroi.spc, use.interactions = TRUE, poly.deg = 1, num.folds = 5, num.means = 3, cov.grids = cov.maps)    
-IntL.ORC.ncv.time <- system.time(IntL.ORC.ncv <- sparsereg3D.ncv(sparse.reg = IntL.ORC.preproc, lambda = seq(0,5,0.1), seed = 321))
-IntL.ORC.time <- system.time(IntL.ORC <- sparsereg3D.sel(sparse.reg = IntL.ORC.preproc ,lambda = seq(0,5,0.1), seed = 321))
+IntL.ORC.preproc <- pre.sparsereg3D(base.model = formulaString, use.hier = FALSE, profiles = edgeroi.spc, use.interactions = TRUE, poly.deg = 1, num.folds = 5, num.means = 3, cov.grids = cov.maps, seed=999)    
+IntL.ORC.ncv.time <- system.time(IntL.ORC.ncv <- sparsereg3D.ncv(sparse.reg = IntL.ORC.preproc, lambda = seq(0,5,0.1), seed = 999))
+IntL.ORC.time <- system.time(IntL.ORC <- sparsereg3D.sel(sparse.reg = IntL.ORC.preproc ,lambda = seq(0,5,0.1), seed = 999))
 #ORC.l.pred <- sparsereg3D.pred(model.info = IntL.ORC, chunk.size = 20000, grids = cov.maps, depths = c(-0.1,-0.2,-0.3))
 
-IntP.ORC.preproc <- pre.sparsereg3D(base.model = formulaString, use.hier = FALSE, profiles = edgeroi.spc, use.interactions = TRUE, poly.deg = 3, num.folds = 5, num.means = 3, cov.grids = cov.maps)    
-IntP.ORC.ncv.time <- system.time(IntP.ORC.ncv <- sparsereg3D.ncv(sparse.reg = IntP.ORC.preproc, lambda = seq(0,5,0.1), seed = 321))
-IntP.ORC.time <- system.time(IntP.ORC <- sparsereg3D.sel(sparse.reg = IntP.ORC.preproc ,lambda = seq(0,5,0.1), seed = 321))
+IntP.ORC.preproc <- pre.sparsereg3D(base.model = formulaString, use.hier = FALSE, profiles = edgeroi.spc, use.interactions = TRUE, poly.deg = 3, num.folds = 5, num.means = 3, cov.grids = cov.maps, seed=999)    
+IntP.ORC.ncv.time <- system.time(IntP.ORC.ncv <- sparsereg3D.ncv(sparse.reg = IntP.ORC.preproc, lambda = seq(0,5,0.1), seed = 999))
+IntP.ORC.time <- system.time(IntP.ORC <- sparsereg3D.sel(sparse.reg = IntP.ORC.preproc ,lambda = seq(0,5,0.1), seed = 999))
 #ORC.l.pred <- sparsereg3D.pred(model.info = IntP.ORC, chunk.size = 20000, grids = cov.maps, depths = c(-0.1,-0.2,-0.3))
 
-IntHL.ORC.preproc <- pre.sparsereg3D(base.model = formulaString, use.hier = TRUE, profiles = edgeroi.spc, use.interactions = TRUE, poly.deg = 1, num.folds = 5, num.means = 3, cov.grids = cov.maps)    
-IntHL.ORC.ncv.time <- system.time(IntHL.ORC.ncv <- sparsereg3D.ncv(sparse.reg = IntHL.ORC.preproc, lambda = seq(0,5,0.1), seed = 321))
-IntHL.ORC.time <- system.time(IntHL.ORC <- sparsereg3D.sel(sparse.reg = IntHL.ORC.preproc ,lambda = seq(0,5,0.1), seed = 321))
+IntHL.ORC.preproc <- pre.sparsereg3D(base.model = formulaString, use.hier = TRUE, profiles = edgeroi.spc, use.interactions = TRUE, poly.deg = 1, num.folds = 5, num.means = 3, cov.grids = cov.maps, seed=123)    
+IntHL.ORC.ncv.time <- system.time(IntHL.ORC.ncv <- sparsereg3D.ncv(sparse.reg = IntHL.ORC.preproc, lambda = seq(0,5,0.1), seed = 123))
+IntHL.ORC.time <- system.time(IntHL.ORC <- sparsereg3D.sel(sparse.reg = IntHL.ORC.preproc ,lambda = seq(0,5,0.1), seed = 123))
 #ORC.l.pred <- sparsereg3D.pred(model.info = IntHL.ORC, chunk.size = 20000, grids = cov.maps, depths = c(-0.1,-0.2,-0.3))
 
-IntHP.ORC.preproc <- pre.sparsereg3D(base.model = formulaString, use.hier = TRUE, profiles = edgeroi.spc, use.interactions = TRUE, poly.deg = 3, num.folds = 5, num.means = 3, cov.grids = cov.maps)    
-IntHP.ORC.ncv.time <- system.time(IntHP.ORC.ncv <- sparsereg3D.ncv(sparse.reg = IntHP.ORC.preproc, lambda = seq(0,5,0.1), seed = 321))
-IntHP.ORC.time <- system.time(IntHP.ORC <- sparsereg3D.sel(sparse.reg = IntHP.ORC.preproc ,lambda = seq(0,5,0.1), seed = 321))
+IntHP.ORC.preproc <- pre.sparsereg3D(base.model = formulaString, use.hier = TRUE, profiles = edgeroi.spc, use.interactions = TRUE, poly.deg = 3, num.folds = 5, num.means = 3, cov.grids = cov.maps, seed=123)    
+IntHP.ORC.ncv.time <- system.time(IntHP.ORC.ncv <- sparsereg3D.ncv(sparse.reg = IntHP.ORC.preproc, lambda = seq(0,5,0.1), seed = 123))
+IntHP.ORC.time <- system.time(IntHP.ORC <- sparsereg3D.sel(sparse.reg = IntHP.ORC.preproc ,lambda = seq(0,5,0.1), seed = 123))
 #ORC.l.pred <- sparsereg3D.pred(model.info = IntHP.ORC, chunk.size = 20000, grids = edgeroi.grids, depths = c(-0.1,-0.2,-0.3))
+
+# Check the data partitioning
+BaseL.ORC.preproc <- pre.sparsereg3D(base.model = formulaString, use.hier = FALSE, profiles = edgeroi.spc, use.interactions = FALSE, poly.deg = 1, num.folds = 5, num.means = 3, cov.grids = cov.maps, seed=999)    
+obs.folds <- BaseL.ORC.preproc$folds$obs.fold.list
+prof.folds <- BaseL.ORC.preproc$folds$profile.fold.list
+edgeroi.data <- BaseL.ORC.preproc$profiles
+
+fold.indices <- c() #rep(NA,dim(edgeroi.spc@site)[1])
+for(i in 1:length(obs.folds)){
+  fold.indices[obs.folds[[i]]] <- i
+}
+
+fold <- as.factor(fold.indices)
+edgeroi.data$fold <- fold
+
+
+plotfolds<-function(data,targetvar){
+  allData <- data
+  targetVar <- targetvar
+  allData.unique <- ddply(allData,.(ID),here(summarize),target=mean(eval(parse(text=targetVar))),longitude=longitude[1],latitude=latitude[1],fold=fold[1])
+  q <- ggplot(allData.unique,aes(x = longitude, y = latitude))
+  r <- q +geom_point(aes(size = sqrt(target/pi)), pch = 21, show.legend = FALSE) + scale_size_continuous(range=c(1,10))
+  r <- r + facet_wrap(~ fold)
+  r <- r + aes(fill = fold)
+  plot(r)
+  
+}
+
+plotfolds(folds = edgeroi.data, targetvar = "ORCDRC")
+
+
+
+
+mean.and.sd2 <- function(values) {
+  narm.values<-values[!is.na(values)]
+  m <- mean(values, na.rm=TRUE)
+  s <- sd(values, na.rm=TRUE)
+  s.mean<-s/sqrt(length(narm.values))
+  n<-length(narm.values)
+  res <- c(mean=m, mean.sd=s.mean ,sd=s,obs=n)
+  return(res)
+}
+
+idx <- which(profile_id(edg.profs) %in% prof.folds[[3]])
+agg <- slab(edgeroi.spc[idx,], fm= ~ ORCDRC + PHIHO5, slab.structure=seq(0,70,5))
+
+## see ?slab for details on the default aggregate function
+head(agg)
+
+Figure2<-xyplot(top ~ p.q50 | variable, data=agg, ylab='Depth',
+                xlab='median bounded by 25th and 75th percentiles',
+                lower=agg$p.q25, upper=agg$p.q75, ylim=c(70,-2),
+                panel=panel.depth_function,
+                alpha=0.25, sync.colors=TRUE,
+                par.settings=list(superpose.line=list(col='RoyalBlue', lwd=2)),
+                prepanel=prepanel.depth_function,
+                cf=agg$contributing_fraction, cf.col='black', cf.interval=5, 
+                layout=c(3,1), strip=strip.custom(bg=grey(0.8)),
+                scales=list(x=list(tick.number=4, alternating=3, relation='free'))
+)
+
+edg.profs <- edgeroi.data
+depths(edg.profs) <- ID ~ Top + Bottom
+site(edg.profs) <- ~ fold + longitude + latitude
+coordinates(edg.profs)<- ~ longitude + latitude
+proj4string(edg.profs)<- CRS(proj4string(edgeroi.grids))
+
+str(edg.profs)
+
+
+idx <- which(profile_id(edg.profs) %in% prof.folds[[2]])
+agg <- slab(edg.profs, fm= ~ ORCDRC)
+agg1 <- slab(edg.profs[idx, ], fm= ~ ORCDRC)
+
+# combine with the collection-wide aggregate data
+g <- make.groups(collection=agg, fold1 = agg1)
+
+# compare graphically:
+xyplot(top ~ p.q50 | variable, groups=which, data=g, ylab='Depth',
+       xlab='median bounded by 25th and 75th percentiles',
+       lower=g$p.q25, upper=g$p.q75, ylim=c(42,-2),
+       panel=panel.depth_function,
+       alpha=0.25, sync.colors=TRUE, cf=g$contributing_fraction, cf.interval=10, 
+       par.settings=list(superpose.line=list(col=c('RoyalBlue', 'Red4'), lwd=2, lty=c(1,2))),
+       prepanel=prepanel.depth_function,
+       layout=c(5,1), strip=strip.custom(bg=grey(0.8)),
+       scales=list(x=list(tick.number=4, alternating=3, relation='free')),
+       auto.key=list(columns=2, lines=TRUE, points=FALSE)
+)
+
+
+
+
+
+
+
+boxplot(ORCDRC~fold, data = edgeroi.data)
+by(edgeroi.data$ORCDRC , edgeroi.data$fold, summary)
+
 
 #Results
 ll <- length(IntL.ORC$coefficients)
