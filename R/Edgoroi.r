@@ -92,6 +92,34 @@ site(edgeroi.spc) <- ~ x + y + TAXGAUC + NOTEOBS
 coordinates(edgeroi.spc) <- ~x+y
 proj4string(edgeroi.spc) <- CRS(proj4string(edgeroi.grids))
 
+
+#Aggregation profiles
+edgeroi.spc@horizons <- rename(edgeroi.spc@horizons, c("PHIHO5"="pH", "ORCDRC"="ORC"))
+agg <- slab(edgeroi.spc, fm= ~ ORC + pH, slab.structure=seq(0,70,5))
+
+## see ?slab for details on the default aggregate function
+head(agg)
+
+Figure2 <- xyplot(top ~ p.q50 | variable, data=agg, ylab='Depth',
+                xlab='median bounded by 25th and 75th percentiles',
+                lower=agg$p.q25, upper=agg$p.q75, ylim=c(70,-2),
+                panel=panel.depth_function,
+                alpha=0.25, sync.colors=TRUE,
+                par.settings=list(superpose.line=list(col='RoyalBlue', lwd=2)),
+                prepanel=prepanel.depth_function,
+                cf=agg$contributing_fraction, cf.col='black', cf.interval=5, 
+                layout=c(2,1), strip=strip.custom(bg=grey(0.8)),
+                scales=list(x=list(tick.number=4, alternating=3, relation='free'))
+)
+
+class(Figure2)
+
+pdf("EdgeroiAgg.pdf",width=6,height=8)
+plot(Figure2) # Make plot
+dev.off()
+#=================================================================== 
+
+
 str(edgeroi.spc)
 
 #formula
