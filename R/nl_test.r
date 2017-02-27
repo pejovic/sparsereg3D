@@ -1,5 +1,5 @@
 
-path <- "C:/Users/User/Dropbox/Extensions of soil 3D trend models/GSIF_competition_NL"
+path <- "C:/Users/Milutin/Dropbox/Extensions of soil 3D trend models/GSIF_competition_NL"
 
 library(rgdal)
 library(GSIF)
@@ -105,7 +105,7 @@ cov.maps@data[,factors] <- f(cov.maps@data[,factors])
 str(cov.maps)
 
 #Data
-SITE <- read.csv(paste("C:/Users/User/Dropbox/Extensions of soil 3D trend models/GSIF_competition_NL", "Alterra_Soil_xy.csv", sep="/"), header = TRUE)
+SITE <- read.csv(paste("C:/Users/Milutin/Dropbox/Extensions of soil 3D trend models/GSIF_competition_NL", "Alterra_Soil_xy.csv", sep="/"), header = TRUE)
 str(SITE)
 ## 643 profiles
 SITE$SOURCEDB = "Alterra-BODEMDATA"
@@ -117,7 +117,7 @@ proj4string(SITE.s) <- "+init=epsg:28992"
 SITE.s <- as.data.frame(SITE.s)
 #View(SITE.s)
 
-horizons <- read.table(paste("C:/Users/User/Dropbox/Extensions of soil 3D trend models/GSIF_competition_NL","Alterra_Soil_data.csv", sep="/"), header =TRUE, na.strings = c("-99","NA"), sep=",")
+horizons <- read.table(paste("C:/Users/Milutin/Dropbox/Extensions of soil 3D trend models/GSIF_competition_NL","Alterra_Soil_data.csv", sep="/"), header =TRUE, na.strings = c("-99","NA"), sep=",")
 str(horizons)
 
 horizons$ORCDRC <- horizons$Organic.Matter....*10 /1.724     ## OC in permilles
@@ -286,7 +286,7 @@ load(file = "D:/R_projects/nl_ORCDRC.RData")
 
 
 
-path <- "C:/Users/User/Dropbox/Extensions of soil 3D trend models/GSIF_competition_NL"
+path <- "C:/Users/Milutin/Dropbox/Extensions of soil 3D trend models/GSIF_competition_NL"
 
 library(rgdal)
 library(GSIF)
@@ -392,7 +392,7 @@ cov.maps@data[,factors] <- f(cov.maps@data[,factors])
 str(cov.maps)
 
 #Data
-SITE <- read.csv(paste("C:/Users/User/Dropbox/Extensions of soil 3D trend models/GSIF_competition_NL", "Alterra_Soil_xy.csv", sep="/"), header = TRUE)
+SITE <- read.csv(paste("C:/Users/Milutin/Dropbox/Extensions of soil 3D trend models/GSIF_competition_NL", "Alterra_Soil_xy.csv", sep="/"), header = TRUE)
 str(SITE)
 ## 643 profiles
 SITE$SOURCEDB = "Alterra-BODEMDATA"
@@ -402,7 +402,7 @@ coordinates(SITE.s) <- ~ X + Y
 proj4string(SITE.s) <- "+init=epsg:28992"
 SITE.s <- as.data.frame(SITE.s)
 #View(SITE.s)
-horizons <- read.table(paste("C:/Users/User/Dropbox/Extensions of soil 3D trend models/GSIF_competition_NL","Alterra_Soil_data.csv", sep="/"), header =TRUE, na.strings = c("-99","NA"), sep=",")
+horizons <- read.table(paste("C:/Users/Milutin/Dropbox/Extensions of soil 3D trend models/GSIF_competition_NL","Alterra_Soil_data.csv", sep="/"), header =TRUE, na.strings = c("-99","NA"), sep=",")
 str(horizons)
 
 horizons$ORCDRC <- horizons$Organic.Matter....*10 /1.724     ## OC in permilles
@@ -440,34 +440,63 @@ formulaString
 
 # logORC results
 BaseL.logORC.preproc <- pre.sparsereg3D(base.model = formulaString, use.hier = FALSE, profiles = nl.profiles, use.interactions = FALSE, poly.deg = 1, num.folds = 5, num.means = 3, cov.grids = cov.maps)    
-BaseL.logORC.ncv.time <- system.time(BaseL.logORC.ncv <- sparsereg3D.ncv(sparse.reg = BaseL.logORC.preproc, lambda = seq(0,5,0.1), seed = 321))
-BaseL.logORC.time <- system.time(BaseL.logORC <- sparsereg3D.sel(sparse.reg = BaseL.logORC.preproc ,lambda = seq(0,5,0.1), seed = 321))
+BaseL.logORC.ncv.time <- system.time(BaseL.logORC.ncv <- sparsereg3D.ncv(sparse.reg = BaseL.logORC.preproc, lambda = seq(0,0.2,0.001), seed = 321))
+BaseL.logORC.time <- system.time(BaseL.logORC <- sparsereg3D.sel(sparse.reg = BaseL.logORC.preproc ,lambda = seq(0,0.2,0.001), seed = 321))
 #logORC.l.pred <- sparsereg3D.pred(model.info = BaseL.logORC, chunk.size = 20000, grids = cov.maps, depths = c(-0.1,-0.2,-0.3))
 
 BaseP.logORC.preproc <- pre.sparsereg3D(base.model = formulaString, use.hier = FALSE, profiles = nl.profiles, use.interactions = FALSE, poly.deg = 3, num.folds = 5, num.means = 3, cov.grids = cov.maps)    
-BaseP.logORC.ncv.time <- system.time(BaseP.logORC.ncv <- sparsereg3D.ncv(sparse.reg = BaseP.logORC.preproc, lambda = seq(0,5,0.1), seed = 321))
-BaseP.logORC.time <- system.time(BaseP.logORC <- sparsereg3D.sel(sparse.reg = BaseP.logORC.preproc ,lambda = seq(0,5,0.1), seed = 321))
+BaseP.logORC.ncv.time <- system.time(BaseP.logORC.ncv <- sparsereg3D.ncv(sparse.reg = BaseP.logORC.preproc, lambda = seq(0,0.2,0.001), seed = 321))
+BaseP.logORC.time <- system.time(BaseP.logORC <- sparsereg3D.sel(sparse.reg = BaseP.logORC.preproc ,lambda = seq(0,0.2,0.001), seed = 321))
 #logORC.p.pred <- sparsereg3D.pred(model.info = logORC.p.sel, chunk.size = 20000, grids = cov.maps, depths = c(-0.1,-0.2,-0.3))
 
 IntL.logORC.preproc <- pre.sparsereg3D(base.model = formulaString, use.hier = FALSE, profiles = nl.profiles, use.interactions = TRUE, poly.deg = 1, num.folds = 5, num.means = 3, cov.grids = cov.maps)    
-IntL.logORC.ncv.time <- system.time(IntL.logORC.ncv <- sparsereg3D.ncv(sparse.reg = IntL.logORC.preproc, lambda = seq(0,5,0.1), seed = 321))
-IntL.logORC.time <- system.time(IntL.logORC <- sparsereg3D.sel(sparse.reg = IntL.logORC.preproc ,lambda = seq(0,5,0.1), seed = 321))
+IntL.logORC.ncv.time <- system.time(IntL.logORC.ncv <- sparsereg3D.ncv(sparse.reg = IntL.logORC.preproc, lambda = seq(0,0.2,0.001), seed = 321))
+IntL.logORC.time <- system.time(IntL.logORC <- sparsereg3D.sel(sparse.reg = IntL.logORC.preproc ,lambda = seq(0,0.2,0.001), seed = 321))
 #logORC.l.pred <- sparsereg3D.pred(model.info = IntL.logORC, chunk.size = 20000, grids = cov.maps, depths = c(-0.1,-0.2,-0.3))
 
 IntP.logORC.preproc <- pre.sparsereg3D(base.model = formulaString, use.hier = FALSE, profiles = nl.profiles, use.interactions = TRUE, poly.deg = 3, num.folds = 5, num.means = 3, cov.grids = cov.maps)    
-IntP.logORC.ncv.time <- system.time(IntP.logORC.ncv <- sparsereg3D.ncv(sparse.reg = IntP.logORC.preproc, lambda = seq(0,5,0.1), seed = 321))
-IntP.logORC.time <- system.time(IntP.logORC <- sparsereg3D.sel(sparse.reg = IntP.logORC.preproc ,lambda = seq(0,5,0.1), seed = 321))
+IntP.logORC.ncv.time <- system.time(IntP.logORC.ncv <- sparsereg3D.ncv(sparse.reg = IntP.logORC.preproc, lambda = seq(0,0.2,0.001), seed = 321))
+IntP.logORC.time <- system.time(IntP.logORC <- sparsereg3D.sel(sparse.reg = IntP.logORC.preproc ,lambda = seq(0,0.2,0.001), seed = 321))
 #logORC.l.pred <- sparsereg3D.pred(model.info = IntP.logORC, chunk.size = 20000, grids = cov.maps, depths = c(-0.1,-0.2,-0.3))
 
-IntHL.logORC.preproc <- pre.sparsereg3D(base.model = formulaString, use.hier = TRUE, profiles = nl.profiles, use.interactions = TRUE, poly.deg = 1, num.folds = 5, num.means = 3, cov.grids = cov.maps)    
-IntHL.logORC.ncv.time <- system.time(IntHL.logORC.ncv <- sparsereg3D.ncv(sparse.reg = IntHL.logORC.preproc, lambda = seq(0,5,0.1), seed = 321))
-IntHL.logORC.time <- system.time(IntHL.logORC <- sparsereg3D.sel(sparse.reg = IntHL.logORC.preproc ,lambda = seq(0,5,0.1), seed = 321))
-#logORC.l.pred <- sparsereg3D.pred(model.info = IntHL.logORC, chunk.size = 20000, grids = cov.maps, depths = c(-0.1,-0.2,-0.3))
+library(doParallel)
 
-IntHP.logORC.preproc <- pre.sparsereg3D(base.model = formulaString, use.hier = TRUE, profiles = nl.profiles, use.interactions = TRUE, poly.deg = 3, num.folds = 5, num.means = 3, cov.grids = cov.maps)    
-IntHP.logORC.ncv.time <- system.time(IntHP.logORC.ncv <- sparsereg3D.ncv(sparse.reg = IntHP.logORC.preproc, lambda = seq(0,5,0.1), seed = 321))
-IntHP.logORC.time <- system.time(IntHP.logORC <- sparsereg3D.sel(sparse.reg = IntHP.logORC.preproc ,lambda = seq(0,5,0.1), seed = 321))
-#logORC.l.pred <- sparsereg3D.pred(model.info = IntHP.logORC, chunk.size = 20000, grids = cov.maps, depths = c(-0.1,-0.2,-0.3))
+registerDoParallel(cores=4)
+
+pack = (.packages())
+
+
+result = foreach (j = 1:2, .packages = pack) %dopar% { 
+  
+  if (j==1){
+    IntHL.logORC.preproc <- pre.sparsereg3D(base.model = formulaString, use.hier = TRUE, profiles = nl.profiles, use.interactions = TRUE, poly.deg = 1, num.folds = 5, num.means = 3, cov.grids = cov.maps)    
+    IntHL.logORC.ncv.time <- system.time(IntHL.logORC.ncv <- sparsereg3D.ncv(sparse.reg = IntHL.logORC.preproc, lambda = seq(0,0.2,0.001), seed = 321))
+    IntHL.logORC.time <- system.time(IntHL.logORC <- sparsereg3D.sel(sparse.reg = IntHL.logORC.preproc ,lambda = seq(0,0.2,0.001), seed = 321))
+    #logORC.l.pred <- sparsereg3D.pred(model.info = IntHL.logORC, chunk.size = 20000, grids = gridmaps.sm2D, depths = c(-0.1,-0.2,-0.3))
+    list(IntHL.logORC.preproc, IntHL.logORC.ncv.time, IntHL.logORC.ncv, IntHL.logORC.time, IntHL.logORC)
+  } else if (j==2) {
+    IntHP.logORC.preproc <- pre.sparsereg3D(base.model = formulaString, use.hier = TRUE, profiles = nl.profiles, use.interactions = TRUE, poly.deg = 3, num.folds = 5, num.means = 3, cov.grids = cov.maps)    
+    IntHP.logORC.ncv.time <- system.time(IntHP.logORC.ncv <- sparsereg3D.ncv(sparse.reg = IntHP.logORC.preproc, lambda = seq(0,0.2,0.001), seed = 321))
+    IntHP.logORC.time <- system.time(IntHP.logORC <- sparsereg3D.sel(sparse.reg = IntHP.logORC.preproc ,lambda = seq(0,0.2,0.001), seed = 321))
+    #logORC.l.pred <- sparsereg3D.pred(model.info = IntHP.logORC, chunk.size = 20000, grids = gridmaps.sm2D, depths = c(-0.1,-0.2,-0.3))
+    list(IntHP.logORC.preproc, IntHP.logORC.ncv.time, IntHP.logORC.ncv, IntHP.logORC.time, IntHP.logORC)
+  }
+  
+}
+
+stopImplicitCluster()
+
+IntHL.logORC.preproc <- result[[1]][[1]]
+IntHL.logORC.ncv.time <- result[[1]][[2]] 
+IntHL.logORC.ncv <- result[[1]][[3]]
+IntHL.logORC.time <- result[[1]][[4]]
+IntHL.logORC <- result[[1]][[5]]
+
+IntHP.logORC.preproc <- result[[2]][[1]]
+IntHP.logORC.ncv.time <- result[[2]][[2]] 
+IntHP.logORC.ncv <- result[[2]][[3]]
+IntHP.logORC.time <- result[[2]][[4]]
+IntHP.logORC <- result[[2]][[5]]
 
 
 #Results
