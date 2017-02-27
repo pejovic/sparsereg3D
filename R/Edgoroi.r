@@ -30,6 +30,7 @@ source(paste(fun.path,"sparsereg3D.sel.r",sep="/"))
 
 data(edgeroi)
 
+
 ## load the 250 m grids:
 con <- url("http://gsif.isric.org/lib/exe/fetch.php?media=edgeroi.grids.rda")
 load(con)
@@ -92,10 +93,13 @@ site(edgeroi.spc) <- ~ x + y + TAXGAUC + NOTEOBS
 coordinates(edgeroi.spc) <- ~x+y
 proj4string(edgeroi.spc) <- CRS(proj4string(edgeroi.grids))
 
+edg.kml <- aqp::slice(edgeroi.spc, 2.5 ~ ORCDRC)
+proj4string(edg.kml) <- CRS(proj4string(edgeroi.grids))
+plotKML(edg.kml["ORCDRC"])
 
 #Aggregation profiles
-edgeroi.spc@horizons <- rename(edgeroi.spc@horizons, c("PHIHO5"="pH", "ORCDRC"="ORC"))
-agg <- slab(edgeroi.spc, fm= ~ ORC + pH, slab.structure=seq(0,70,5))
+edgeroi.spc@horizons <- rename(edgeroi.spc@horizons, c("PHIHO5"="pH", "ORCDRC"="SOC"))
+agg <- slab(edgeroi.spc, fm= ~ SOC + pH, slab.structure=seq(0,70,5))
 
 ## see ?slab for details on the default aggregate function
 head(agg)
@@ -341,15 +345,44 @@ IntP.pH.ncv.time <- system.time(IntP.pH.ncv <- sparsereg3D.ncv(sparse.reg = IntP
 IntP.pH.time <- system.time(IntP.pH <- sparsereg3D.sel(sparse.reg = IntP.pH.preproc ,lambda = seq(0,5,0.1), seed = 321))
 #pH.l.pred <- sparsereg3D.pred(model.info = IntP.pH, chunk.size = 20000, grids = cov.maps, depths = c(-0.1,-0.2,-0.3))
 
-IntHL.pH.preproc <- pre.sparsereg3D(base.model = formulaString, use.hier = TRUE, profiles = edgeroi.spc, use.interactions = TRUE, poly.deg = 1, num.folds = 5, num.means = 3, cov.grids = cov.maps)    
-IntHL.pH.ncv.time <- system.time(IntHL.pH.ncv <- sparsereg3D.ncv(sparse.reg = IntHL.pH.preproc, lambda = seq(0,5,0.1), seed = 321))
-IntHL.pH.time <- system.time(IntHL.pH <- sparsereg3D.sel(sparse.reg = IntHL.pH.preproc ,lambda = seq(0,5,0.1), seed = 321))
-#pH.l.pred <- sparsereg3D.pred(model.info = IntHL.pH, chunk.size = 20000, grids = cov.maps, depths = c(-0.1,-0.2,-0.3))
+library(doParallel)
 
-IntHP.pH.preproc <- pre.sparsereg3D(base.model = formulaString, use.hier = TRUE, profiles = edgeroi.spc, use.interactions = TRUE, poly.deg = 3, num.folds = 5, num.means = 3, cov.grids = cov.maps)    
-IntHP.pH.ncv.time <- system.time(IntHP.pH.ncv <- sparsereg3D.ncv(sparse.reg = IntHP.pH.preproc, lambda = seq(0,5,0.1), seed = 321))
-IntHP.pH.time <- system.time(IntHP.pH <- sparsereg3D.sel(sparse.reg = IntHP.pH.preproc ,lambda = seq(0,5,0.1), seed = 321))
-#pH.l.pred <- sparsereg3D.pred(model.info = IntHP.pH, chunk.size = 20000, grids = edgeroi.grids, depths = c(-0.1,-0.2,-0.3))
+registerDoParallel(cores=4)
+
+pack = (.packages())
+
+
+result = foreach (j = 1:2, .packages = pack) %dopar% { 
+  
+  if (j==1){
+    IntHL.pH.preproc <- pre.sparsereg3D(base.model = formulaString, use.hier = TRUE, profiles = edgeroi.spc, use.interactions = TRUE, poly.deg = 1, num.folds = 5, num.means = 3, cov.grids = cov.maps)    
+    IntHL.pH.ncv.time <- system.time(IntHL.pH.ncv <- sparsereg3D.ncv(sparse.reg = IntHL.pH.preproc, lambda = seq(0,0.2,0.001), seed = 321))
+    IntHL.pH.time <- system.time(IntHL.pH <- sparsereg3D.sel(sparse.reg = IntHL.pH.preproc ,lambda = seq(0,0.2,0.001), seed = 321))
+    #pH.l.pred <- sparsereg3D.pred(model.info = IntHL.pH, chunk.size = 20000, grids = gridmaps.sm2D, depths = c(-0.1,-0.2,-0.3))
+    list(IntHL.pH.preproc, IntHL.pH.ncv.time, IntHL.pH.ncv, IntHL.pH.time, IntHL.pH)
+  } else if (j==2) {
+    IntHP.pH.preproc <- pre.sparsereg3D(base.model = formulaString, use.hier = TRUE, profiles = edgeroi.spc, use.interactions = TRUE, poly.deg = 3, num.folds = 5, num.means = 3, cov.grids = cov.maps)    
+    IntHP.pH.ncv.time <- system.time(IntHP.pH.ncv <- sparsereg3D.ncv(sparse.reg = IntHP.pH.preproc, lambda = seq(0,0.2,0.001), seed = 321))
+    IntHP.pH.time <- system.time(IntHP.pH <- sparsereg3D.sel(sparse.reg = IntHP.pH.preproc ,lambda = seq(0,0.2,0.001), seed = 321))
+    #pH.l.pred <- sparsereg3D.pred(model.info = IntHP.pH, chunk.size = 20000, grids = gridmaps.sm2D, depths = c(-0.1,-0.2,-0.3))
+    list(IntHP.pH.preproc, IntHP.pH.ncv.time, IntHP.pH.ncv, IntHP.pH.time, IntHP.pH)
+  }
+  
+}
+
+stopImplicitCluster()
+
+IntHL.pH.preproc <- result[[1]][[1]]
+IntHL.pH.ncv.time <- result[[1]][[2]] 
+IntHL.pH.ncv <- result[[1]][[3]]
+IntHL.pH.time <- result[[1]][[4]]
+IntHL.pH <- result[[1]][[5]]
+
+IntHP.pH.preproc <- result[[2]][[1]]
+IntHP.pH.ncv.time <- result[[2]][[2]] 
+IntHP.pH.ncv <- result[[2]][[3]]
+IntHP.pH.time <- result[[2]][[4]]
+IntHP.pH <- result[[2]][[5]]
 
 #Results
 ll <- length(IntL.pH$coefficients)
@@ -418,35 +451,66 @@ formulaString
 
 #sparsereg3D
 # logORC results
-BaseL.logORC.preproc <- pre.sparsereg3D(base.model = formulaString, use.hier = FALSE, profiles = edgeroi.spc, use.interactions = FALSE, poly.deg = 1, num.folds = 5, num.means = 3, cov.grids = cov.maps)    
-BaseL.logORC.ncv.time <- system.time(BaseL.logORC.ncv <- sparsereg3D.ncv(sparse.reg = BaseL.logORC.preproc, lambda = seq(0,5,0.1), seed = 321))
-BaseL.logORC.time <- system.time(BaseL.logORC <- sparsereg3D.sel(sparse.reg = BaseL.logORC.preproc ,lambda = seq(0,5,0.1), seed = 321))
+BaseL.logORC.preproc <- pre.sparsereg3D(base.model = formulaString, use.hier = FALSE, profiles = edgeroi.spc, use.interactions = FALSE, poly.deg = 1, num.folds = 5, num.means = 3, cov.grids = cov.maps, seed = 321)    
+BaseL.logORC.ncv.time <- system.time(BaseL.logORC.ncv <- sparsereg3D.ncv(sparse.reg = BaseL.logORC.preproc, lambda = seq(0,0.2,0.001), seed = 321))
+BaseL.logORC.time <- system.time(BaseL.logORC <- sparsereg3D.sel(sparse.reg = BaseL.logORC.preproc ,lambda = seq(0,0.2,0.001), seed = 321))
 #logORC.l.pred <- sparsereg3D.pred(model.info = BaseL.logORC, chunk.size = 20000, grids = cov.maps, depths = c(-0.1,-0.2,-0.3))
 
-BaseP.logORC.preproc <- pre.sparsereg3D(base.model = formulaString, use.hier = FALSE, profiles = edgeroi.spc, use.interactions = FALSE, poly.deg = 3, num.folds = 5, num.means = 3, cov.grids = cov.maps)    
-BaseP.logORC.ncv.time <- system.time(BaseP.logORC.ncv <- sparsereg3D.ncv(sparse.reg = BaseP.logORC.preproc, lambda = seq(0,5,0.1), seed = 321))
-BaseP.logORC.time <- system.time(BaseP.logORC <- sparsereg3D.sel(sparse.reg = BaseP.logORC.preproc ,lambda = seq(0,5,0.1), seed = 321))
+BaseP.logORC.preproc <- pre.sparsereg3D(base.model = formulaString, use.hier = FALSE, profiles = edgeroi.spc, use.interactions = FALSE, poly.deg = 3, num.folds = 5, num.means = 3, cov.grids = cov.maps, seed = 321)    
+BaseP.logORC.ncv.time <- system.time(BaseP.logORC.ncv <- sparsereg3D.ncv(sparse.reg = BaseP.logORC.preproc, lambda = seq(0,0.2,0.001), seed = 321))
+BaseP.logORC.time <- system.time(BaseP.logORC <- sparsereg3D.sel(sparse.reg = BaseP.logORC.preproc ,lambda = seq(0,0.2,0.001), seed = 321))
 #logORC.p.pred <- sparsereg3D.pred(model.info = logORC.p.sel, chunk.size = 20000, grids = cov.maps, depths = c(-0.1,-0.2,-0.3))
 
-IntL.logORC.preproc <- pre.sparsereg3D(base.model = formulaString, use.hier = FALSE, profiles = edgeroi.spc, use.interactions = TRUE, poly.deg = 1, num.folds = 5, num.means = 3, cov.grids = cov.maps)    
-IntL.logORC.ncv.time <- system.time(IntL.logORC.ncv <- sparsereg3D.ncv(sparse.reg = IntL.logORC.preproc, lambda = seq(0,5,0.1), seed = 321))
-IntL.logORC.time <- system.time(IntL.logORC <- sparsereg3D.sel(sparse.reg = IntL.logORC.preproc ,lambda = seq(0,5,0.1), seed = 321))
+IntL.logORC.preproc <- pre.sparsereg3D(base.model = formulaString, use.hier = FALSE, profiles = edgeroi.spc, use.interactions = TRUE, poly.deg = 1, num.folds = 5, num.means = 3, cov.grids = cov.maps, seed = 321)    
+IntL.logORC.ncv.time <- system.time(IntL.logORC.ncv <- sparsereg3D.ncv(sparse.reg = IntL.logORC.preproc, lambda = seq(0,0.2,0.001), seed = 321))
+IntL.logORC.time <- system.time(IntL.logORC <- sparsereg3D.sel(sparse.reg = IntL.logORC.preproc ,lambda = seq(0,0.2,0.001), seed = 321))
 #logORC.l.pred <- sparsereg3D.pred(model.info = IntL.logORC, chunk.size = 20000, grids = cov.maps, depths = c(-0.1,-0.2,-0.3))
 
-IntP.logORC.preproc <- pre.sparsereg3D(base.model = formulaString, use.hier = FALSE, profiles = edgeroi.spc, use.interactions = TRUE, poly.deg = 3, num.folds = 5, num.means = 3, cov.grids = cov.maps)    
-IntP.logORC.ncv.time <- system.time(IntP.logORC.ncv <- sparsereg3D.ncv(sparse.reg = IntP.logORC.preproc, lambda = seq(0,5,0.1), seed = 321))
-IntP.logORC.time <- system.time(IntP.logORC <- sparsereg3D.sel(sparse.reg = IntP.logORC.preproc ,lambda = seq(0,5,0.1), seed = 321))
+IntP.logORC.preproc <- pre.sparsereg3D(base.model = formulaString, use.hier = FALSE, profiles = edgeroi.spc, use.interactions = TRUE, poly.deg = 3, num.folds = 5, num.means = 3, cov.grids = cov.maps, seed = 321)    
+IntP.logORC.ncv.time <- system.time(IntP.logORC.ncv <- sparsereg3D.ncv(sparse.reg = IntP.logORC.preproc, lambda = seq(0,0.2,0.001), seed = 321))
+IntP.logORC.time <- system.time(IntP.logORC <- sparsereg3D.sel(sparse.reg = IntP.logORC.preproc ,lambda = seq(0,0.2,0.001), seed = 321))
 #logORC.l.pred <- sparsereg3D.pred(model.info = IntP.logORC, chunk.size = 20000, grids = cov.maps, depths = c(-0.1,-0.2,-0.3))
 
-IntHL.logORC.preproc <- pre.sparsereg3D(base.model = formulaString, use.hier = TRUE, profiles = edgeroi.spc, use.interactions = TRUE, poly.deg = 1, num.folds = 5, num.means = 3, cov.grids = cov.maps)    
-IntHL.logORC.ncv.time <- system.time(IntHL.logORC.ncv <- sparsereg3D.ncv(sparse.reg = IntHL.logORC.preproc, lambda = seq(0,5,0.1), seed = 321))
-IntHL.logORC.time <- system.time(IntHL.logORC <- sparsereg3D.sel(sparse.reg = IntHL.logORC.preproc ,lambda = seq(0,5,0.1), seed = 321))
-#logORC.l.pred <- sparsereg3D.pred(model.info = IntHL.logORC, chunk.size = 20000, grids = cov.maps, depths = c(-0.1,-0.2,-0.3))
+library(doParallel)
 
-IntHP.logORC.preproc <- pre.sparsereg3D(base.model = formulaString, use.hier = TRUE, profiles = edgeroi.spc, use.interactions = TRUE, poly.deg = 3, num.folds = 5, num.means = 3, cov.grids = cov.maps)    
-IntHP.logORC.ncv.time <- system.time(IntHP.logORC.ncv <- sparsereg3D.ncv(sparse.reg = IntHP.logORC.preproc, lambda = seq(0,5,0.1), seed = 321))
-IntHP.logORC.time <- system.time(IntHP.logORC <- sparsereg3D.sel(sparse.reg = IntHP.logORC.preproc ,lambda = seq(0,5,0.1), seed = 321))
-#logORC.l.pred <- sparsereg3D.pred(model.info = IntHP.logORC, chunk.size = 20000, grids = edgeroi.grids, depths = c(-0.1,-0.2,-0.3))
+registerDoParallel(cores=4)
+
+pack = (.packages())
+
+
+result = foreach (j = 1:2, .packages = pack) %dopar% { 
+  
+  if (j==1){
+    IntHL.logORC.preproc <- pre.sparsereg3D(base.model = formulaString, use.hier = TRUE, profiles = edgeroi.spc, use.interactions = TRUE, poly.deg = 1, num.folds = 5, num.means = 3, cov.grids = cov.maps)    
+    IntHL.logORC.ncv.time <- system.time(IntHL.logORC.ncv <- sparsereg3D.ncv(sparse.reg = IntHL.logORC.preproc, lambda = seq(0,0.2,0.001), seed = 321))
+    IntHL.logORC.time <- system.time(IntHL.logORC <- sparsereg3D.sel(sparse.reg = IntHL.logORC.preproc ,lambda = seq(0,0.2,0.001), seed = 321))
+    #logORC.l.pred <- sparsereg3D.pred(model.info = IntHL.logORC, chunk.size = 20000, grids = gridmaps.sm2D, depths = c(-0.1,-0.2,-0.3))
+    list(IntHL.logORC.preproc, IntHL.logORC.ncv.time, IntHL.logORC.ncv, IntHL.logORC.time, IntHL.logORC)
+  } else if (j==2) {
+    IntHP.logORC.preproc <- pre.sparsereg3D(base.model = formulaString, use.hier = TRUE, profiles = edgeroi.spc, use.interactions = TRUE, poly.deg = 3, num.folds = 5, num.means = 3, cov.grids = cov.maps)    
+    IntHP.logORC.ncv.time <- system.time(IntHP.logORC.ncv <- sparsereg3D.ncv(sparse.reg = IntHP.logORC.preproc, lambda = seq(0,0.2,0.001), seed = 321))
+    IntHP.logORC.time <- system.time(IntHP.logORC <- sparsereg3D.sel(sparse.reg = IntHP.logORC.preproc ,lambda = seq(0,0.2,0.001), seed = 321))
+    #logORC.l.pred <- sparsereg3D.pred(model.info = IntHP.logORC, chunk.size = 20000, grids = gridmaps.sm2D, depths = c(-0.1,-0.2,-0.3))
+    list(IntHP.logORC.preproc, IntHP.logORC.ncv.time, IntHP.logORC.ncv, IntHP.logORC.time, IntHP.logORC)
+  }
+  
+}
+
+stopImplicitCluster()
+
+IntHL.logORC.preproc <- result[[1]][[1]]
+IntHL.logORC.ncv.time <- result[[1]][[2]] 
+IntHL.logORC.ncv <- result[[1]][[3]]
+IntHL.logORC.time <- result[[1]][[4]]
+IntHL.logORC <- result[[1]][[5]]
+
+IntHP.logORC.preproc <- result[[2]][[1]]
+IntHP.logORC.ncv.time <- result[[2]][[2]] 
+IntHP.logORC.ncv <- result[[2]][[3]]
+IntHP.logORC.time <- result[[2]][[4]]
+IntHP.logORC <- result[[2]][[5]]
+
+
 
 #Results
 ll <- length(IntL.logORC$coefficients)
@@ -466,7 +530,7 @@ cmP.logORC <- data.frame(variable=IntHP.logORC$coefficients[,1], BaseP.logORC.me
 cmlogORC <- cmP.logORC[,c(1,7:10)]
 
 # Models comparison
-logORC.ncv <- data.frame(rbind(BaseL = BaseL.logORC.ncv, BaseP = BaseP.logORC.ncv, IntL = IntL.logORC.ncv, IntP = IntP.logORC.ncv, IntHL = IntHL.logORC.ncv, IntHP = IntHP.logORC.ncv))
+logORC.ncv <- data.frame(rbind(BaseL = BaseL.logORC.ncv[1:2], BaseP = BaseP.logORC.ncv[1:2], IntL = IntL.logORC.ncv[1:2], IntP = IntP.logORC.ncv[1:2], IntHL = IntHL.logORC.ncv[1:2], IntHP = IntHP.logORC.ncv[1:2]))
 logORC.ncv <- data.frame(Model = rownames(logORC.ncv), logORC.ncv)
 rownames(logORC.ncv) <- NULL
 names(logORC.ncv) <- c("Model","RMSE","R squared")
@@ -496,9 +560,9 @@ n.coeffs <- function(l.coeffs,p.coeffs){
   n.IntHP <-   data.frame(total = prod(dim(IntHP)),  selected = sum(apply(IntHP,2, function(y) sum(y!=0))), "main effects" = apply(IntHP,2, function(y) sum(y!=0))[1], "interaction effects" = sum(apply(IntHP,2, function(y) sum(y!=0))[2:4]))
   
   
-  total <- data.frame(rbind(n.BaseL,n.BaseP,n.IntL,n.IntHL,n.IntP,n.IntHP))
+  total <- data.frame(rbind(n.BaseL,n.BaseP,n.IntL,n.IntP,n.IntHL,n.IntHP))
   rownames(total) <- NULL
-  total <- cbind(model = c("BaseL","BaseP", "IntL","IntHL", "IntP","IntHP"), total)
+  total <- cbind(model = c("BaseL","BaseP", "IntL", "IntP","IntHL","IntHP"), total)
   return(total)
 }
 
@@ -509,3 +573,108 @@ save.image(file = "D:/R_projects/edgeroi_logORC_pH.RData")
 
 load(file = "D:/R_projects/edgeroi_logORC_pH.RData")
 load(file = "D:/R_projects/edgeroi_ORC.RData")
+
+
+
+
+altitude <- data.frame(altitude=seq(-1,-40,-1))
+
+#altitude <- data.frame(altitude=c(-0.1,-0.3,-0.4))
+altitude.s <- as.numeric(predict(IntHP$summary$preProc$alt.par , newdata = altitude)[,1])
+variables <- c("CD","DD","DEM","Slope","VDistChNet","WEnw")#,"TWI")
+variables <- variables[order(variables)]
+
+#10.4895187  5.7506602 -0.4258973000
+#cmP.As[cmP.As$variable=="VDistChNet","IntHP.ie1"] <- 5.7506602
+
+coefs.IntHP <- (cmP.As[which(as.character(cmP.As$variable) %in% variables),c(1,7:10)])
+coefs.IntP <- (cmP.As[which(as.character(cmP.As$variable) %in% variables),c(1,3:6)])
+
+coefs.IntHP <- coefs.IntHP[order(coefs.IntHP$variable),]
+coefs.IntP <- coefs.IntP[order(coefs.IntP$variable),]
+
+coefs.IntHP <- coefs.IntHP[,-1]
+coefs.IntP <- coefs.IntP[,-1]
+
+
+effects.IntHP <- as.numeric()
+for(i in 1:dim(coefs.IntHP)[1]){
+  effects <- coefs.IntHP[i,1] + coefs.IntHP[i,2]*altitude.s + coefs.IntHP[i,3]*altitude.s^2 + coefs.IntHP[i,4]*altitude.s^3
+  effects <- data.frame(depth = altitude[,1], var = effects)
+  effects.IntHP <- rbind(effects.IntHP, effects)
+}  
+
+effects.IntHP$Variables <- factor(rep(variables, each = length(altitude.s)))
+intHPlot <- qplot(var, depth, data = effects.IntHP, geom = c("point", "line"), color = Variables)+theme_bw()+theme(legend.text=element_text(size=12))+theme(axis.text=element_text(size=12),axis.title=element_text(size=14,face="bold"))+labs(x="Coefficients",y="Depth")
+
+
+effects.IntP <- as.numeric()
+for(i in 1:dim(coefs.IntP)[1]){
+  effects <- coefs.IntP[i,1] + coefs.IntP[i,2]*altitude.s + coefs.IntP[i,3]*altitude.s^2 + coefs.IntP[i,4]*altitude.s^3
+  effects <- data.frame(depth = altitude[,1], var = effects)
+  effects.IntP <- rbind(effects.IntP, effects)
+}  
+
+effects.IntP$Variables <- factor(rep(variables, each = length(altitude.s)))
+intPlot <- qplot(var, depth, data = effects.IntP, geom = c("point", "line"), color = Variables)+theme_bw()+theme(legend.text=element_text(size=12))+theme(axis.text=element_text(size=12),axis.title=element_text(size=14,face="bold"))+labs(x="Coefficients",y="Depth")
+
+pdf("AsIntHPlot.pdf",width=8,height=10)
+intHPlot
+dev.off()
+
+pdf("AsIntPlot.pdf",width=8,height=10)
+intPlot
+dev.off()
+
+#============================== SOM coef path plot ==================================================
+depth <- data.frame(depth=seq(-0.1,-0.40,-0.10))
+depth.mean <- as.data.frame(t(IntHP.ORC$std.par$cnt.par$mean))[,"depth"]
+depth.sd <- as.data.frame(t(IntHP.ORC$std.par$cnt.par$std))[,"depth"]
+
+depth.s <- (depth+depth.mean)/depth.sd#              as.numeric(predict(IntHP.ORC$std.par , newdata = depth)[,1])
+variables <- IntHP.ORC$std.par$dummy.par$vars[-which(IntHP.ORC$std.par$dummy.par$vars %in% c(IntHP.ORC$std.par$dummy.par$facVars, "depth", "depth2","depth3"))]
+variables <- variables[order(variables)]
+
+coefs.IntHP <- (cmP.ORC[which(as.character(cmP.ORC$variable) %in% variables),c(1,7:10)])
+coefs.IntP <- (cmP.ORC[which(as.character(cmP.ORC$variable) %in% variables),c(1,3:6)])
+
+coefs.IntHP <- coefs.IntHP[order(coefs.IntHP$variable),]
+coefs.IntP <- coefs.IntP[order(coefs.IntP$variable),]
+
+coefs.IntHP <- coefs.IntHP[,-1]
+coefs.IntP <- coefs.IntP[,-1]
+
+
+effects.IntHP <- as.numeric()
+
+for(i in 1:dim(coefs.IntHP)[1]){
+  effects <- coefs.IntHP[i,1] + coefs.IntHP[i,2]*depth.s + coefs.IntHP[i,3]*depth.s^2 + coefs.IntHP[i,4]*depth.s^3
+  effects <- data.frame(depth = depth[,1], var = effects)
+  names(effects) <- c("depth","var")
+  effects.IntHP <- rbind(effects.IntHP, effects)
+}  
+
+effects.IntHP$Variables <- factor(rep(variables, each = dim(depth.s)[1]))
+intHPlot <- qplot(var, depth, data = effects.IntHP, geom = c("point", "line"), color = Variables)+theme_bw()+theme(legend.text=element_text(size=12))+theme(axis.text=element_text(size=12),axis.title=element_text(size=14,face="bold"))+labs(x="Coefficients",y="Depth")
+
+
+effects.IntP <- as.numeric()
+
+for(i in 1:dim(coefs.IntP)[1]){
+  effects <- coefs.IntP[i,1] + coefs.IntP[i,2]*depth.s + coefs.IntP[i,3]*depth.s^2 + coefs.IntP[i,4]*depth.s^3
+  effects <- data.frame(depth = depth[,1], var = effects)
+  names(effects) <- c("depth","var")
+  effects.IntP <- rbind(effects.IntP, effects)
+}
+
+effects.IntP$Variables <- factor(rep(variables, each = dim(depth.s)[1]))
+intPlot <- qplot(var, depth, data = effects.IntP, geom = c("point", "line"), color = Variables)+theme_bw()+theme(legend.text=element_text(size=12))+theme(axis.text=element_text(size=12),axis.title=element_text(size=14,face="bold"))+labs(x="Coefficients",y="Depth")
+
+pdf("SOMIntHPlot.pdf",width=8,height=10)
+intHPlot
+dev.off()
+
+pdf("SOMIntPlot.pdf",width=8,height=10)
+intPlot
+dev.off()
+

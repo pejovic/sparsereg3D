@@ -33,6 +33,8 @@ sparsereg3D.ncv <- function(sparse.reg, lambda, seed = 321){
   
   # Preparing empty data frames which will contain the results of procedure.
   test.prediction <- data.frame()
+  data.prediction <- data.frame()
+  models.ncv <- as.list(rep(NA,num.folds))
   
   # Outer loop of nested crossvalidation
   for(i in 1:length(profile.fold.list)){
@@ -58,13 +60,15 @@ sparsereg3D.ncv <- function(sparse.reg, lambda, seed = 321){
       # Convert list of vectors of indices per fold to vector of fold indices for each observation as glmnet requires
       # list(c(1,4),c(2,5),c(3,6)) -> c(1,2,3,1,2,3)
       inner.fold.indices <- rep(NA,dim(training.data)[1])
-      for(i in 1:length(inner.obs.fold.list)){
-        inner.fold.indices[inner.obs.fold.list[[i]]] <- i
+      for(j in 1:length(inner.obs.fold.list)){
+        inner.fold.indices[inner.obs.fold.list[[j]]] <- j
       }
       
       # Inner crossvalidation loop with model selection
       lasso.cv <- cv.glmnet(as.matrix(training.data[,-1]), training.data[,1], alpha = 1,lambda = lambda, foldid = inner.fold.indices, type.measure = "mse")
-      
+      coef.list <- coef(lasso.cv, s = "lambda.min")
+      lambda.min <- lasso.cv$lambda.min
+      models.ncv[[i]] <- as.list(c(coefficients = coef.list, lambda = lambda.min))
       # Prediction on test set
       test.pred <- predict(lasso.cv, s = lasso.cv$lambda.min, newx = as.matrix(test.data[,-1]))
       test.pred <- pmax(test.pred, target.min/3)
@@ -82,6 +86,18 @@ sparsereg3D.ncv <- function(sparse.reg, lambda, seed = 321){
       hier.lasso.cv <- hierNet.cv(hier.path, training.main.effects, training.target, folds = inner.obs.fold.list, trace=0)
       final.hier.model <- hierNet(training.main.effects, training.target, zz = training.int.effects, diagonal=FALSE, strong=TRUE, lam = hier.lasso.cv$lamhat, center = TRUE, stand.main = FALSE, stand.int = FALSE)
       
+      # Extracting the coefficients of each model
+      if(poly.deg == 1){ 
+        int.coeff <- as.matrix(hier.path$th[,,which(hier.lasso.cv$lamhat==hier.path$lamlist)][,length(main.effect.names)]) 
+      } else {
+        int.coeff <- as.matrix(hier.path$th[,,which(hier.lasso.cv$lamhat==hier.path$lamlist)][,(length(main.effect.names)-poly.deg+1):length(main.effect.names)]) 
+      }
+      main.coeff <- hier.path$bp[,which(hier.lasso.cv$lamhat==hier.path$lamlist), drop = F] - hier.path$bn[,which(hier.lasso.cv$lamhat==hier.path$lamlist), drop = F]
+      
+      coef.list <- data.frame(cov.name=colnames(training.main.effects),main.coeff,int.coeff)
+      
+      models.ncv[[i]] <- coef.list
+      
       # Prediction on test set
       test.pred <- predict(final.hier.model, newx = test.main.effects, newzz = test.int.effects) 
       test.pred <- pmax(test.pred,target.min/3)
@@ -90,9 +106,12 @@ sparsereg3D.ncv <- function(sparse.reg, lambda, seed = 321){
     # Assembling predictions for final model assessment
     test.obs.pred <- data.frame(obs = test.data[,target.name], pred = as.numeric(test.pred))
     test.prediction <- rbind(test.prediction,test.obs.pred)
+    
+    obs.pred <- data.frame(test.data, pred = as.numeric(test.pred))
+    data.prediction <- rbind(data.prediction,obs.pred)
   }
   
   # Storing results
-  out <- list(RMSE = defaultSummary(test.prediction)[1], Rsquared = defaultSummary(test.prediction)[2])
+  out <- list(RMSE = defaultSummary(test.prediction)[1], Rsquared = defaultSummary(test.prediction)[2], data.prediction = data.prediction, models = models.ncv)
   return(out)
 }
