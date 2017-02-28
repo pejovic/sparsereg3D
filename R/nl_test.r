@@ -437,26 +437,36 @@ str(nl.profiles)
 formulaString <- as.formula(paste(paste("logORCDRC ~ "), paste(c(names(cov.maps),"depth"), collapse="+"))) #[-which(names(cov.maps) %in% c("slope","TWI","LS_factor"))]
 formulaString
 
+BaseLols.logORC.preproc <- pre.sparsereg3D(base.model = formulaString, use.hier = FALSE, profiles = nl.profiles, use.interactions = FALSE, poly.deg = 1, num.folds = 5, num.means = 3, cov.grids = cov.maps)    
+BaseLols.logORC.ncv.time <- system.time(BaseLols.logORC.ncv <- sparsereg3D.ncv(sparse.reg = BaseLols.logORC.preproc, lambda = seq(0,5,5), seed = 321))
+BaseLols.logORC.time <- system.time(BaseLols.logORC <- sparsereg3D.sel(sparse.reg = BaseLols.logORC.preproc ,lambda = seq(0,5,5), seed = 321))
+#logORC.l.pred <- sparsereg3D.pred(model.info = BaseLols.logORC, chunk.size = 20000, grids = cov.maps, depths = c(-0.1,-0.2,-0.3))
 
-# logORC results
-BaseL.logORC.preproc <- pre.sparsereg3D(base.model = formulaString, use.hier = FALSE, profiles = nl.profiles, use.interactions = FALSE, poly.deg = 1, num.folds = 5, num.means = 3, cov.grids = cov.maps)    
-BaseL.logORC.ncv.time <- system.time(BaseL.logORC.ncv <- sparsereg3D.ncv(sparse.reg = BaseL.logORC.preproc, lambda = seq(0,5,5), seed = 321))
-BaseL.logORC.time <- system.time(BaseL.logORC <- sparsereg3D.sel(sparse.reg = BaseL.logORC.preproc ,lambda = seq(0,5,5), seed = 321))
-#logORC.l.pred <- sparsereg3D.pred(model.info = BaseL.logORC, chunk.size = 20000, grids = cov.maps, depths = c(-0.1,-0.2,-0.3))
-
-BaseP.logORC.preproc <- pre.sparsereg3D(base.model = formulaString, use.hier = FALSE, profiles = nl.profiles, use.interactions = FALSE, poly.deg = 3, num.folds = 5, num.means = 3, cov.grids = cov.maps)    
-BaseP.logORC.ncv.time <- system.time(BaseP.logORC.ncv <- sparsereg3D.ncv(sparse.reg = BaseP.logORC.preproc, lambda = seq(0,5,5), seed = 321))
-BaseP.logORC.time <- system.time(BaseP.logORC <- sparsereg3D.sel(sparse.reg = BaseP.logORC.preproc ,lambda = seq(0,5,5), seed = 321))
+BasePols.logORC.preproc <- pre.sparsereg3D(base.model = formulaString, use.hier = FALSE, profiles = nl.profiles, use.interactions = FALSE, poly.deg = 3, num.folds = 5, num.means = 3, cov.grids = cov.maps)    
+BasePols.logORC.ncv.time <- system.time(BasePols.logORC.ncv <- sparsereg3D.ncv(sparse.reg = BasePols.logORC.preproc, lambda = seq(0,5,5), seed = 321))
+BasePols.logORC.time <- system.time(BasePols.logORC <- sparsereg3D.sel(sparse.reg = BasePols.logORC.preproc ,lambda = seq(0,5,5), seed = 321))
 #logORC.p.pred <- sparsereg3D.pred(model.info = logORC.p.sel, chunk.size = 20000, grids = cov.maps, depths = c(-0.1,-0.2,-0.3))
 
-IntL.logORC.preproc <- pre.sparsereg3D(base.model = formulaString, use.hier = FALSE, profiles = nl.profiles, use.interactions = TRUE, poly.deg = 1, num.folds = 5, num.means = 3, cov.grids = cov.maps)    
-IntL.logORC.ncv.time <- system.time(IntL.logORC.ncv <- sparsereg3D.ncv(sparse.reg = IntL.logORC.preproc, lambda = seq(0,5,5), seed = 321))
-IntL.logORC.time <- system.time(IntL.logORC <- sparsereg3D.sel(sparse.reg = IntL.logORC.preproc ,lambda = seq(0,5,5), seed = 321))
+
+# logORC results
+BaseL.logORC.preproc <- pre.sparsereg3D(base.model = formulaString, use.hier = FALSE, profiles = nl.profiles, seed = 555, use.interactions = FALSE, poly.deg = 1, num.folds = 5, num.means = 3, cov.grids = cov.maps)    
+BaseL.logORC.ncv.time <- system.time(BaseL.logORC.ncv <- sparsereg3D.ncv(sparse.reg = BaseL.logORC.preproc, lambda = seq(0,0.2,0.001), seed = 555))
+BaseL.logORC.time <- system.time(BaseL.logORC <- sparsereg3D.sel(sparse.reg = BaseL.logORC.preproc ,lambda = seq(0,0.2,0.001), seed = 555))
+#logORC.l.pred <- sparsereg3D.pred(model.info = BaseL.logORC, chunk.size = 20000, grids = cov.maps, depths = c(-0.1,-0.2,-0.3))
+
+BaseP.logORC.preproc <- pre.sparsereg3D(base.model = formulaString, use.hier = FALSE, profiles = nl.profiles, seed = 555, use.interactions = FALSE, poly.deg = 3, num.folds = 5, num.means = 3, cov.grids = cov.maps)    
+BaseP.logORC.ncv.time <- system.time(BaseP.logORC.ncv <- sparsereg3D.ncv(sparse.reg = BaseP.logORC.preproc, lambda = seq(0,0.2,0.001), seed = 555))
+BaseP.logORC.time <- system.time(BaseP.logORC <- sparsereg3D.sel(sparse.reg = BaseP.logORC.preproc ,lambda = seq(0,0.2,0.001), seed = 555))
+#logORC.p.pred <- sparsereg3D.pred(model.info = logORC.p.sel, chunk.size = 20000, grids = cov.maps, depths = c(-0.1,-0.2,-0.3))
+
+IntL.logORC.preproc <- pre.sparsereg3D(base.model = formulaString, use.hier = FALSE, profiles = nl.profiles, seed = 555, use.interactions = TRUE, poly.deg = 1, num.folds = 5, num.means = 3, cov.grids = cov.maps)    
+IntL.logORC.ncv.time <- system.time(IntL.logORC.ncv <- sparsereg3D.ncv(sparse.reg = IntL.logORC.preproc, lambda = seq(0,0.2,0.001), seed = 555))
+IntL.logORC.time <- system.time(IntL.logORC <- sparsereg3D.sel(sparse.reg = IntL.logORC.preproc ,lambda = seq(0,0.2,0.001), seed = 555))
 #logORC.l.pred <- sparsereg3D.pred(model.info = IntL.logORC, chunk.size = 20000, grids = cov.maps, depths = c(-0.1,-0.2,-0.3))
 
-IntP.logORC.preproc <- pre.sparsereg3D(base.model = formulaString, use.hier = FALSE, profiles = nl.profiles, use.interactions = TRUE, poly.deg = 3, num.folds = 5, num.means = 3, cov.grids = cov.maps)    
-IntP.logORC.ncv.time <- system.time(IntP.logORC.ncv <- sparsereg3D.ncv(sparse.reg = IntP.logORC.preproc, lambda = seq(0,5,5), seed = 321))
-IntP.logORC.time <- system.time(IntP.logORC <- sparsereg3D.sel(sparse.reg = IntP.logORC.preproc ,lambda = seq(0,5,5), seed = 321))
+IntP.logORC.preproc <- pre.sparsereg3D(base.model = formulaString, use.hier = FALSE, profiles = nl.profiles, seed = 555, use.interactions = TRUE, poly.deg = 3, num.folds = 5, num.means = 3, cov.grids = cov.maps)    
+IntP.logORC.ncv.time <- system.time(IntP.logORC.ncv <- sparsereg3D.ncv(sparse.reg = IntP.logORC.preproc, lambda = seq(0,0.2,0.001), seed = 555))
+IntP.logORC.time <- system.time(IntP.logORC <- sparsereg3D.sel(sparse.reg = IntP.logORC.preproc ,lambda = seq(0,0.2,0.001), seed = 555))
 #logORC.l.pred <- sparsereg3D.pred(model.info = IntP.logORC, chunk.size = 20000, grids = cov.maps, depths = c(-0.1,-0.2,-0.3))
 
 library(doParallel)
@@ -493,7 +503,7 @@ IntHL.logORC.time <- result[[1]][[4]]
 IntHL.logORC <- result[[1]][[5]]
 
 IntHP.logORC.preproc <- result[[2]][[1]]
-IntHP.logORC.ncv.time <- result[[2]][[2]] 
+IntHP.logORC.ncv.time <- result[[2]][[2]]
 IntHP.logORC.ncv <- result[[2]][[3]]
 IntHP.logORC.time <- result[[2]][[4]]
 IntHP.logORC <- result[[2]][[5]]
