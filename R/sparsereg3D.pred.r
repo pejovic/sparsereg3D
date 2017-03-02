@@ -25,7 +25,27 @@ sparsereg3D.pred <- function(model.info, depths, grids, chunk.size) {
   poly.deg <- model.info$model$poly.deg
   base.model <- model.info$model$base.model
   
-  # Creating 3list of grids, each corresponds to different depth
+  # creating list of classes of each categorical variables that were used in training 
+  factor.lvls <- std.par$dummy.par$lvls
+  
+  # identifying of classes that exist in cov.maps but not used in training 
+  for(i in names(std.par$dummy.par$lvls)){
+    factor.lvls[[i]] <- (levels(grids@data[,i])[(levels(grids@data[,i]) %ni% std.par$dummy.par$lvls[[i]])])
+  }
+  
+  # identifying which categorical variables has such classes
+  ind <- as.numeric(which(lapply(factor.lvls, function(x) length(x)) != 0))
+  
+  # masking of such classes by the second most dominant class
+  for(j in names(std.par$dummy.par$lvls[ind])){
+    grids@data[,j] <- ifelse(as.character(grids@data[,j]) %in% factor.lvls[[j]], attr(sort(summary(grids@data[,j]), decreasing = TRUE)[2], "names"), as.character(grids@data[,j]))
+    grids@data[,j] <- factor(grids@data[,j])
+  }
+  
+  #profiles[complete.cases(profiles[,c("ID",coord.names,"hdepth","depth",target.name)]),c("ID",target.name,"hdepth",coord.names,"depth")]
+  grids <- grids[complete.cases(grids@data[,names(grids@data)]), names(grids@data)]
+  
+    # Creating 3list of grids, each corresponds to different depth
   grids.3D <- sp3D(grids, stdepths = depths) 
   
   # Number of cores has to be 1, because function mclapply does not work on many cores
@@ -46,16 +66,18 @@ sparsereg3D.pred <- function(model.info, depths, grids, chunk.size) {
   
   # Splitting grids into chunks, computing interactions in parallel on these chunks
   if(use.interactions){
-    n <- nrow(covs.data[[1]]) 
+    n <- nrow(covs.data[[1]])
+    chunk.size <- round_any(n/3,1000)
     r <- rep(1:ceiling(n/chunk.size),each = chunk.size)[1:n] 
     covs.int.data <- lapply(covs.data, function(x) as.data.frame(x)) %>% lapply(., function(x) split(x,r))
     
-    m.cores <- detectCores() 
+    m.cores <- detectCores()
     registerDoParallel(cores = m.cores)
     
-    for(i in 1:length(covs.int.data)){ 
-      covs.int.data[[i]] <- foreach(j = covs.int.data[[i]],.combine="rbind") %dopar% {hierNet::compute.interactions.c(as.matrix(j),diagonal = FALSE)}
-    }
+
+      for(i in 1:length(covs.int.data)){ 
+        covs.int.data[[i]] <- foreach(j = 1:length(covs.int.data[[i]]),.combine="rbind") %dopar% {hierNet::compute.interactions.c(as.matrix(covs.int.data[[i]][[j]]),diagonal = FALSE)}
+      }
   }
   
   # Combining main effect grids and grids with computed interactions
