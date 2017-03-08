@@ -12,9 +12,10 @@
 # Standardization parameters
 
 
-sparsereg3D.sel <- function(sparse.reg, lambda, seed = 321){
+sparsereg3D.sel <- function(sparse.reg, lambda){
   
   # Extracting data from sparse.reg object
+  seed <- sparse.reg$folds$seed
   profile.fold.list <- sparse.reg$folds$profile.fold.list 
   obs.fold.list <- sparse.reg$folds$obs.fold.list 
   profiles <- sparse.reg$profiles

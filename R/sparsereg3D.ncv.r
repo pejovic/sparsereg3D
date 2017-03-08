@@ -14,9 +14,10 @@
 #sparse.reg = pre.som
 #lambda = seq(0,5,0.1)
 
-sparsereg3D.ncv <- function(sparse.reg, lambda, seed = 321){
+sparsereg3D.ncv <- function(sparse.reg, lambda){
   
   # Extracting data from sparse.reg object
+  seed <- sparse.reg$folds$seed
   profile.fold.list <- sparse.reg$folds$profile.fold.list 
   obs.fold.list <- sparse.reg$folds$obs.fold.list 
   profiles <- sparse.reg$profiles

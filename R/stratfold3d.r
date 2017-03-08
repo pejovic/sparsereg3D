@@ -18,7 +18,7 @@
 
 #target.name = target.name; seed = seed; data = profiles; num.folds = num.folds; num.means = num.means 
 
-stratfold3d <- function(target.name, data, num.folds = 10, num.means = 3, seed = 42) {
+stratfold3d <- function(target.name, data, num.folds = 10, num.means = 3, seed) {
   
   # Profiles are clustered using k-means clustering according to spatial location
   clustering.data <- ddply(data, .(ID), here(summarize), target=weighted.mean(eval(parse(text=target.name)), hdepth), longitude=longitude[1], latitude=latitude[1])

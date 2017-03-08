@@ -134,7 +134,7 @@ pre.sparsereg3D <- function(base.model, profiles, cov.grids, use.hier=FALSE, pol
   } else {
     model <- list(base.model = base.model, poly.deg = poly.deg, use.interactions = use.interactions, use.hier = use.hier, main.effect.names = main.effect.names, depth.int.names = c(), all.int.names = c())
   }
-  folds <- list(profile.fold.list = profile.fold.list, obs.fold.list = obs.fold.list)
+  folds <- list(profile.fold.list = profile.fold.list, obs.fold.list = obs.fold.list, seed = seed)
   std.par <- list(dummy.par = dummy.par, cnt.par = cnt.par)
   out <- list(profiles = profiles, cov.grids = cov.grids, model = model, num.folds = num.folds, num.means = num.means, std.par = std.par, folds = folds)
   
