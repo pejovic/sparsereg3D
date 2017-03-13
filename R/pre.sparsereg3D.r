@@ -23,7 +23,9 @@
 
 # TODO Uraditi transformaciju jedinica u cm ako vec nije
 
-pre.sparsereg3D <- function(base.model, profiles, cov.grids, use.hier=FALSE, poly.deg = 1, num.folds = 10, num.means = 3, use.interactions = TRUE, standardize=TRUE, seed=321){
+#base.model = formulaString; use.hier = FALSE; profiles = edgeroi.spc; use.interactions = TRUE; poly.deg = 3; num.folds = 5; num.means = 5; cov.grids = cov.maps; seed = seed; coord.trend = TRUE; standardize = TRUE
+
+pre.sparsereg3D <- function(base.model, profiles, cov.grids, use.hier=FALSE, poly.deg = 1, num.folds = 10, num.means = 3, use.interactions = TRUE, standardize = TRUE, coord.trend = TRUE, seed=321, kmean.vars = NULL){
   
   "%ni%" <- Negate("%in%")
   
@@ -56,7 +58,7 @@ pre.sparsereg3D <- function(base.model, profiles, cov.grids, use.hier=FALSE, pol
   
   # Spatial overlay
   profiles <- profiles[complete.cases(profiles[,c("ID",coord.names,"hdepth","depth",target.name)]),c("ID",target.name,"hdepth",coord.names,"depth")]
-  coordinates(profiles) <- ~ x + y
+  coordinates(profiles) <- coord.names
   proj4string(profiles) <- p4s
   profiles <- spTransform(profiles, proj4string(cov.grids))
   ov <- over(profiles, cov.grids)
@@ -72,31 +74,39 @@ pre.sparsereg3D <- function(base.model, profiles, cov.grids, use.hier=FALSE, pol
   profiles <- cbind(as.data.frame(profiles), ov[,sp.cov.names])
   profiles <- profiles[complete.cases(profiles[,all.vars(base.model)]),c("ID",target.name,"hdepth",coord.names, sp.cov.names, "depth")]
   
+  if(coord.trend){base.model <- as.formula(paste(target.name,"~", paste(c(sp.cov.names,coord.names,"depth"), collapse="+"))); sp.cov.names <- c(sp.cov.names, coord.names)}
+  
   # Adding polynomial depth terms in input data matrix, only if poly.deg > 1  
   if(poly.deg > 1){
-    profiles <- cbind(profiles,poly(profiles$depth,poly.deg,raw=TRUE,simple=TRUE)[,-1])
-    names(profiles) <- c(names(profiles)[1:(length(names(profiles))-(poly.deg-1))],(paste("depth",c(2:poly.deg),sep="")))
-    base.model <- as.formula(paste(target.name,"~", paste(c(all.vars(base.model)[-1],paste("depth",c(2:poly.deg),sep="")), collapse="+")))
+    profiles <- cbind(profiles,poly(profiles$depth, poly.deg,raw=TRUE,simple=TRUE)[,-1])
+    names(profiles) <- c(names(profiles)[1:(length(names(profiles))-(poly.deg-1))],(paste("depth", c(2:poly.deg),sep="")))
+    base.model <- as.formula(paste(target.name,"~", paste(c(all.vars(base.model)[-1],paste("depth", c(2:poly.deg),sep="")), collapse="+")))
   }
-  
+
   # Dummy coding
-  dummy.par <- dummyVars(as.formula(paste("~", paste(c(all.vars(base.model))[-1], collapse="+"))),profiles,levelsOnly=FALSE) 
-  profiles <- cbind(profiles[,which(colnames(profiles) %in% c("ID","hdepth",target.name,coord.names))], predict(dummy.par, newdata = profiles)) 
+  dummy.par <- dummyVars(as.formula(paste("~", paste(c(all.vars(base.model))[-1], collapse="+"))), profiles, levelsOnly = FALSE) 
+  if(coord.trend){profiles <- cbind(profiles[, which(colnames(profiles) %in% c("ID","hdepth", target.name))], predict(dummy.par, newdata = profiles))
+                  }else{profiles <- cbind(profiles[, which(colnames(profiles) %in% c("ID","hdepth", target.name, coord.names))], predict(dummy.par, newdata = profiles))
+                  }
+   
   
   # Names
-  colnames(profiles) <- gsub( "\\_|/|\\-|\"|\\s" , "." , colnames(profiles) ) 
-  main.effect.names <- colnames(profiles)[-which(colnames(profiles) %in% c("ID","hdepth",target.name,coord.names))]
+  colnames(profiles) <- gsub( "\\_|/|\\-|\"|\\s" , "." , colnames(profiles) )
+  if(coord.trend){main.effect.names <- colnames(profiles)[-c(1:3)]}else{main.effect.names <- colnames(profiles)[-c(1:5)]}
+  
+  #main.effect.names <- gsub( "\\_|/|\\-|\"|\\s" , "." , main.effect.names )
+  
   
   # Computing interactions in input data matrix
   if (use.interactions == TRUE){
-    
-    interactions <- hierNet::compute.interactions.c(as.matrix(profiles[,-c(which(colnames(profiles) %in% c("ID",target.name,"hdepth",coord.names)))]),diagonal=FALSE)
-    
+    f <- as.formula(~ .^2)
+    #interactions <- hierNet::compute.interactions.c(as.matrix(profiles[,-c(which(colnames(profiles) %in% c("ID",target.name,"hdepth",coord.names)))]),diagonal=FALSE)
+    interactions <- model.matrix(f, profiles[,main.effect.names]) %>% subset(., select = -(which(colnames(.) %in% c("(Intercept)", main.effect.names))))
     # Names of interactions including depth
     if(poly.deg > 1){ 
       depth.int.names <- colnames(interactions[,do.call(c,lapply(strsplit(colnames(interactions),":"), function(x) x[2] %in% c("depth",paste("depth",c(2:poly.deg),sep="")) & x[1] %ni% c("depth",paste("depth",c(2:poly.deg),sep=""))))]) 
     } else {
-      depth.int.names <- (interactions %>% as.data.frame() %>% subset(., select=grep("depth", names(.), value=TRUE)) %>% colnames())
+      depth.int.names <- (interactions %>% as.data.frame() %>% subset(., select = grep("depth", names(.), value=TRUE)) %>% colnames())
     }
     
     # In hierarchical setting, interactions other than with depth must be zero
@@ -122,21 +132,27 @@ pre.sparsereg3D <- function(base.model, profiles, cov.grids, use.hier=FALSE, pol
   #TODO Ne sme da osta ne x i y
   
   # Data stratification
-  profiles <- as.data.frame(profiles) 
-  profiles <- plyr::rename(profiles, replace=c("x" = "longitude", "y" = "latitude"))
-  tmp <- stratfold3d(target.name = target.name, seed = seed, data = profiles, num.folds = num.folds, num.means = num.means)
+  profiles <- as.data.frame(profiles)
+  if(is.null(kmean.vars)){kmean.vars <- coord.names
+    } else {
+    kmean.vars.ind <- which(apply(sapply(t(kmean.vars), function(x) grepl(x, main.effect.names)), 1, sum) == 1)
+    kmean.vars <- c(coord.names, main.effect.names[kmean.vars.ind])
+    }
+  
+  tmp <- stratfold3d(target.name = target.name, other.names = kmean.vars, seed = seed, data = profiles, num.folds = num.folds, num.means = num.means)
   profile.fold.list <- tmp$profile.fold.list
   obs.fold.list <- tmp$obs.fold.list
+  DataWithFolds <- tmp$data
   
   # Output object creation
   if(use.interactions == TRUE){
-    model <- list(base.model = base.model, poly.deg = poly.deg, use.interactions = use.interactions, use.hier = use.hier, main.effect.names = main.effect.names, depth.int.names = depth.int.names, all.int.names = colnames(interactions))    
+    model <- list(base.model = base.model, poly.deg = poly.deg, use.interactions = use.interactions, use.hier = use.hier, main.effect.names = main.effect.names, kmean.vars = kmean.vars, depth.int.names = depth.int.names, all.int.names = colnames(interactions))    
   } else {
-    model <- list(base.model = base.model, poly.deg = poly.deg, use.interactions = use.interactions, use.hier = use.hier, main.effect.names = main.effect.names, depth.int.names = c(), all.int.names = c())
+    model <- list(base.model = base.model, poly.deg = poly.deg, use.interactions = use.interactions, use.hier = use.hier, main.effect.names = main.effect.names, kmean.vars = kmean.vars, depth.int.names = c(), all.int.names = c())
   }
   folds <- list(profile.fold.list = profile.fold.list, obs.fold.list = obs.fold.list, seed = seed)
   std.par <- list(dummy.par = dummy.par, cnt.par = cnt.par)
-  out <- list(profiles = profiles, cov.grids = cov.grids, model = model, num.folds = num.folds, num.means = num.means, std.par = std.par, folds = folds)
+  out <- list(profiles = profiles, DataWithFolds = DataWithFolds, cov.grids = cov.grids, model = model, num.folds = num.folds, num.means = num.means, std.par = std.par, folds = folds)
   
   return(out)
   

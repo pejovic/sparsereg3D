@@ -31,9 +31,11 @@ sparsereg3D.ncv <- function(sparse.reg, lambda){
   poly.deg = sparse.reg$model$poly.deg
   depth.int.names = sparse.reg$model$depth.int.names
   all.int.names = sparse.reg$model$all.int.names
+  kmean.vars = sparse.reg$model$kmean.vars
   
   # Preparing empty data frames which will contain the results of procedure.
   test.prediction <- data.frame()
+  accuracy <- list()
   data.prediction <- data.frame()
   models.ncv <- as.list(rep(NA,num.folds))
   
@@ -44,7 +46,7 @@ sparsereg3D.ncv <- function(sparse.reg, lambda){
     training.data <- profiles[training.obs.ind,]
     
     # Inner crossvalidation partitioning
-    tmp <- stratfold3d(target.name, training.data, num.folds = num.folds, seed = seed, num.means = num.means)
+    tmp <- stratfold3d(target.name = target.name, other.names = kmean.vars , data = training.data, num.folds = num.folds, seed = seed, num.means = num.means)
     inner.profile.fold.list <- tmp$profile.fold.list
     inner.obs.fold.list <- tmp$obs.fold.list
     
@@ -73,6 +75,10 @@ sparsereg3D.ncv <- function(sparse.reg, lambda){
       # Prediction on test set
       test.pred <- predict(lasso.cv, s = lasso.cv$lambda.min, newx = as.matrix(test.data[,-1]))
       test.pred <- pmax(test.pred, target.min/3)
+      
+      training.pred <- predict(lasso.cv, s = lasso.cv$lambda.min, newx = as.matrix(training.data[,-1]))
+      training.pred <- pmax(training.pred, target.min/3)
+      
     }else{
       # Hierarchical setting requires the separation of main effects and interaction effects
       training.main.effects <- as.matrix(training.data[,main.effect.names]) 
@@ -102,17 +108,25 @@ sparsereg3D.ncv <- function(sparse.reg, lambda){
       # Prediction on test set
       test.pred <- predict(final.hier.model, newx = test.main.effects, newzz = test.int.effects) 
       test.pred <- pmax(test.pred,target.min/3)
+      
+      training.pred <- predict(final.hier.model, newx = training.main.effects, newzz = training.int.effects)
+      training.pred <- pmax(training.pred, target.min/3)
     }
     
     # Assembling predictions for final model assessment
     test.obs.pred <- data.frame(obs = test.data[,target.name], pred = as.numeric(test.pred))
     test.prediction <- rbind(test.prediction,test.obs.pred)
     
+    training.obs.pred <- data.frame(obs = training.data[,target.name], pred = as.numeric(training.pred))
+    
+    if(!use.hier){accuracy[[i]] <- c(defaultSummary(test.obs.pred), RMSEcv = sqrt(min(lasso.cv$cvm)))}else{accuracy[[i]] <- defaultSummary(test.obs.pred)}
+    
+
     obs.pred <- data.frame(test.data, pred = as.numeric(test.pred))
     data.prediction <- rbind(data.prediction,obs.pred)
   }
   
   # Storing results
-  out <- list(RMSE = defaultSummary(test.prediction)[1], Rsquared = defaultSummary(test.prediction)[2], data.prediction = data.prediction, models = models.ncv)
+  out <- list(RMSE = defaultSummary(test.prediction)[1], Rsquared = defaultSummary(test.prediction)[2], Accuracy = accuracy, data.prediction = data.prediction, models = models.ncv)
   return(out)
 }

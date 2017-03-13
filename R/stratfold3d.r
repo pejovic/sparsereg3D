@@ -16,13 +16,17 @@
 # profile.fold.list - list containing a vector of profile IDs that constitute each fold
 # obs.fold.list     - list containing a vector of observation IDs that constitute each fold
 
-#target.name = target.name; seed = seed; data = profiles; num.folds = num.folds; num.means = num.means 
+#target.name = target.name; other.names = main.effect.names; seed = seed; data = training.data; num.folds = num.folds; num.means = num.means 
 
-stratfold3d <- function(target.name, data, num.folds = 10, num.means = 3, seed) {
+stratfold3d <- function(target.name, other.names, data, num.folds, num.means, seed) {
   
   # Profiles are clustered using k-means clustering according to spatial location
-  clustering.data <- ddply(data, .(ID), here(summarize), target=weighted.mean(eval(parse(text=target.name)), hdepth), longitude=longitude[1], latitude=latitude[1])
-  km <- kmeans(cbind(clustering.data$longitude, clustering.data$latitude),  centers = num.means)
+  target.data <- ddply(data, .(ID), here(summarize), target = weighted.mean(eval(parse(text=target.name)), hdepth))
+  other.data <- ddply(data[,c("ID", other.names)], .(ID), colwise(max))
+  clustering.data <- cbind(target.data, other.data[,-1])
+  clustering.data <- clustering.data[complete.cases(clustering.data),]
+  set.seed(seed)
+  km <- kmeans(clustering.data[,-1],  centers = num.means)
   clustering.data$cluster <- as.factor(km$cluster)
   
   # Creating empty list to contain stratified folds
@@ -33,6 +37,7 @@ stratfold3d <- function(target.name, data, num.folds = 10, num.means = 3, seed) 
   for(i in 1:length(cluster.list)){
     set.seed(seed)
     cluster.list[[i]] <- createFolds(clustering.data[which(clustering.data$cluster == levels(clustering.data$cluster)[i]),"target"], k = num.folds)
+    if(length(cluster.list[[i]]) < num.folds){stop(paste("There is no enough data in cluster", i, sep = " "))}
     for(j in 1:num.folds){
       cluster.list[[i]][[j]] <- clustering.data[which(clustering.data$cluster == levels(clustering.data$cluster)[i]),"ID"][cluster.list[[i]][[j]]]
     }
