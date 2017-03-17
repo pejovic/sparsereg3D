@@ -32,6 +32,7 @@ sparsereg3D.ncv <- function(sparse.reg, lambda){
   depth.int.names = sparse.reg$model$depth.int.names
   all.int.names = sparse.reg$model$all.int.names
   kmean.vars = sparse.reg$model$kmean.vars
+  cum.prop = sparse.reg$model$cum.prop
   
   # Preparing empty data frames which will contain the results of procedure.
   test.prediction <- data.frame()
@@ -46,7 +47,7 @@ sparsereg3D.ncv <- function(sparse.reg, lambda){
     training.data <- profiles[training.obs.ind,]
     
     # Inner crossvalidation partitioning
-    tmp <- stratfold3d(target.name = target.name, other.names = kmean.vars , data = training.data, num.folds = num.folds, seed = seed, num.means = num.means)
+    tmp <- stratfold3d(target.name = target.name, other.names = kmean.vars , data = training.data, num.folds = num.folds, seed = seed, num.means = num.means, cum.prop = cum.prop)
     inner.profile.fold.list <- tmp$profile.fold.list
     inner.obs.fold.list <- tmp$obs.fold.list
     

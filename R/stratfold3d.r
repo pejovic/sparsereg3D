@@ -16,17 +16,22 @@
 # profile.fold.list - list containing a vector of profile IDs that constitute each fold
 # obs.fold.list     - list containing a vector of observation IDs that constitute each fold
 
-#target.name = target.name; other.names = main.effect.names; seed = seed; data = training.data; num.folds = num.folds; num.means = num.means 
+#target.name = target.name; other.names = kmean.vars; seed = seed; data = profiles; num.folds = num.folds; num.means = num.means 
 
-stratfold3d <- function(target.name, other.names, data, num.folds, num.means, seed) {
+stratfold3d <- function(target.name, other.names, data, num.folds, num.means, seed, cum.prop) {
   
   # Profiles are clustered using k-means clustering according to spatial location
   target.data <- ddply(data, .(ID), here(summarize), target = weighted.mean(eval(parse(text=target.name)), hdepth))
   other.data <- ddply(data[,c("ID", other.names)], .(ID), colwise(max))
   clustering.data <- cbind(target.data, other.data[,-1])
   clustering.data <- clustering.data[complete.cases(clustering.data),]
+  prc <- prcomp(as.formula(paste(paste(" ~ "), paste(names(clustering.data)[-c(1:2)], collapse="+"))), data = clustering.data)
+  t <- c()
+  for(i in 1:sum(summary(prc)$importance[3,] <= cum.prop)){
+    t <- cbind(t, as.matrix(clustering.data[,-c(1:2)]) %*% as.matrix(prc[[2]][,i]))
+  }
   set.seed(seed)
-  km <- kmeans(clustering.data[,-1],  centers = num.means)
+  km <- kmeans(t,  centers = num.means)
   clustering.data$cluster <- as.factor(km$cluster)
   
   # Creating empty list to contain stratified folds

@@ -22,10 +22,9 @@
 
 
 # TODO Uraditi transformaciju jedinica u cm ako vec nije
+#base.model = formulaString; use.hier = FALSE; profiles = edgeroi.spc; use.interactions = FALSE; poly.deg = 1; num.folds = 5; num.means = 2; cov.grids = cov.maps; seed = seed; kmean.vars = all.vars(formulaString); standardize = TRUE; coord.trend = TRUE
 
-#base.model = formulaString; use.hier = FALSE; profiles = edgeroi.spc; use.interactions = TRUE; poly.deg = 3; num.folds = 5; num.means = 5; cov.grids = cov.maps; seed = seed; coord.trend = TRUE; standardize = TRUE
-
-pre.sparsereg3D <- function(base.model, profiles, cov.grids, use.hier=FALSE, poly.deg = 1, num.folds = 10, num.means = 3, use.interactions = TRUE, standardize = TRUE, coord.trend = TRUE, seed=321, kmean.vars = NULL){
+pre.sparsereg3D <- function(base.model, profiles, cov.grids, use.hier=FALSE, poly.deg = 1, num.folds = 10, num.means = 3, use.interactions = TRUE, standardize = TRUE, coord.trend = TRUE, seed=321, kmean.vars = NULL, cum.prop = 0.90){
   
   "%ni%" <- Negate("%in%")
   
@@ -139,16 +138,16 @@ pre.sparsereg3D <- function(base.model, profiles, cov.grids, use.hier=FALSE, pol
     kmean.vars <- c(coord.names, main.effect.names[kmean.vars.ind])
     }
   
-  tmp <- stratfold3d(target.name = target.name, other.names = kmean.vars, seed = seed, data = profiles, num.folds = num.folds, num.means = num.means)
+  tmp <- stratfold3d(target.name = target.name, other.names = kmean.vars, seed = seed, data = profiles, num.folds = num.folds, num.means = num.means, cum.prop = cum.prop)
   profile.fold.list <- tmp$profile.fold.list
   obs.fold.list <- tmp$obs.fold.list
   DataWithFolds <- tmp$data
   
   # Output object creation
   if(use.interactions == TRUE){
-    model <- list(base.model = base.model, poly.deg = poly.deg, use.interactions = use.interactions, use.hier = use.hier, main.effect.names = main.effect.names, kmean.vars = kmean.vars, depth.int.names = depth.int.names, all.int.names = colnames(interactions))    
+    model <- list(base.model = base.model, poly.deg = poly.deg, use.interactions = use.interactions, use.hier = use.hier, cum.prop = cum.prop, main.effect.names = main.effect.names, kmean.vars = kmean.vars, depth.int.names = depth.int.names, all.int.names = colnames(interactions))    
   } else {
-    model <- list(base.model = base.model, poly.deg = poly.deg, use.interactions = use.interactions, use.hier = use.hier, main.effect.names = main.effect.names, kmean.vars = kmean.vars, depth.int.names = c(), all.int.names = c())
+    model <- list(base.model = base.model, poly.deg = poly.deg, use.interactions = use.interactions, use.hier = use.hier, cum.prop = cum.prop, main.effect.names = main.effect.names, kmean.vars = kmean.vars, depth.int.names = c(), all.int.names = c())
   }
   folds <- list(profile.fold.list = profile.fold.list, obs.fold.list = obs.fold.list, seed = seed)
   std.par <- list(dummy.par = dummy.par, cnt.par = cnt.par)
