@@ -54,9 +54,10 @@ pre.sparsereg3D <- function(base.model, profiles, cov.grids, use.hier=FALSE, pol
   # Adding depth and horizon depth
   profiles$depth <- - (profiles$Top / 100 + (( profiles$Bottom - profiles$Top ) / 2) / 100) 
   profiles$hdepth <- profiles$Bottom - profiles$Top
+  profiles$mid.depth <- profiles$depth
   
   # Spatial overlay
-  profiles <- profiles[complete.cases(profiles[,c("ID",coord.names,"hdepth","depth",target.name)]),c("ID",target.name,"hdepth",coord.names,"depth")]
+  profiles <- profiles[complete.cases(profiles[,c("ID",coord.names,"hdepth","mid.depth","depth",target.name)]),c("ID",target.name,"hdepth","mid.depth",coord.names,"depth")]
   coordinates(profiles) <- coord.names
   proj4string(profiles) <- p4s
   profiles <- spTransform(profiles, proj4string(cov.grids))
@@ -68,10 +69,10 @@ pre.sparsereg3D <- function(base.model, profiles, cov.grids, use.hier=FALSE, pol
     ov[,i] <- factor(ov[,i])
   }
   
-  # Preparing data input matrix with following columns: "ID", target.name, "hdepth", coord.names, sp.cov.names, "depth" 
+  # Preparing data input matrix with following columns: "ID", target.name, "hdepth", coord.names, "mid.depth", sp.cov.names, "depth" 
   sp.cov.names <- names(ov[,which(names(ov) %in% c(all.vars(base.model)))])
   profiles <- cbind(as.data.frame(profiles), ov[,sp.cov.names])
-  profiles <- profiles[complete.cases(profiles[,all.vars(base.model)]),c("ID",target.name,"hdepth",coord.names, sp.cov.names, "depth")]
+  profiles <- profiles[complete.cases(profiles[,all.vars(base.model)]),c("ID",target.name,"hdepth","mid.depth",coord.names, sp.cov.names, "depth")]
   
   if(coord.trend){base.model <- as.formula(paste(target.name,"~", paste(c(sp.cov.names,coord.names,"depth"), collapse="+"))); sp.cov.names <- c(sp.cov.names, coord.names)}
   
@@ -84,14 +85,14 @@ pre.sparsereg3D <- function(base.model, profiles, cov.grids, use.hier=FALSE, pol
 
   # Dummy coding
   dummy.par <- dummyVars(as.formula(paste("~", paste(c(all.vars(base.model))[-1], collapse="+"))), profiles, levelsOnly = FALSE) 
-  if(coord.trend){profiles <- cbind(profiles[, which(colnames(profiles) %in% c("ID","hdepth", target.name))], predict(dummy.par, newdata = profiles))
-                  }else{profiles <- cbind(profiles[, which(colnames(profiles) %in% c("ID","hdepth", target.name, coord.names))], predict(dummy.par, newdata = profiles))
+  if(coord.trend){profiles <- cbind(profiles[, which(colnames(profiles) %in% c("ID","hdepth", "mid.depth", target.name))], predict(dummy.par, newdata = profiles))
+                  }else{profiles <- cbind(profiles[, which(colnames(profiles) %in% c("ID","hdepth","mid.depth", target.name, coord.names))], predict(dummy.par, newdata = profiles))
                   }
    
   
   # Names
   colnames(profiles) <- gsub( "\\_|/|\\-|\"|\\s" , "." , colnames(profiles) )
-  if(coord.trend){main.effect.names <- colnames(profiles)[-c(1:3)]}else{main.effect.names <- colnames(profiles)[-c(1:5)]}
+  if(coord.trend){main.effect.names <- colnames(profiles)[-c(1:4)]}else{main.effect.names <- colnames(profiles)[-c(1:6)]}
   
   #main.effect.names <- gsub( "\\_|/|\\-|\"|\\s" , "." , main.effect.names )
   

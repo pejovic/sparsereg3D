@@ -25,14 +25,34 @@ stratfold3d <- function(target.name, other.names, data, num.folds, num.means, se
   other.data <- ddply(data[,c("ID", other.names)], .(ID), colwise(max))
   clustering.data <- cbind(target.data, other.data[,-1])
   clustering.data <- clustering.data[complete.cases(clustering.data),]
-  prc <- prcomp(as.formula(paste(paste(" ~ "), paste(names(clustering.data)[-c(1:2)], collapse="+"))), data = clustering.data)
-  t <- c()
-  for(i in 1:sum(summary(prc)$importance[3,] <= cum.prop)){
-    t <- cbind(t, as.matrix(clustering.data[,-c(1:2)]) %*% as.matrix(prc[[2]][,i]))
+  if(length(other.names) > 2){
+    prc <- prcomp(as.formula(paste(paste(" ~ "), paste(names(clustering.data)[-c(1:2)], collapse="+"))), data = clustering.data)
+    t <- c()
+    for(i in 1:sum(summary(prc)$importance[3,] <= cum.prop)){
+      t <- cbind(t, as.matrix(clustering.data[,-c(1:2)]) %*% as.matrix(prc[[2]][,i]))
+    }
+    set.seed(seed)
+    km <- kmeans(t,  centers = num.means)    
+  }else{
+    t <- clustering.data[,-c(1,2)]
   }
-  set.seed(seed)
-  km <- kmeans(t,  centers = num.means)
-  clustering.data$cluster <- as.factor(km$cluster)
+  km.quality <- c()
+  seed.seq <- seed+seq(0,1000,1)
+  for ( i in seed.seq){
+    set.seed(i)
+    km.temp <- kmeans(t,  centers = num.means)$tot.withinss
+    km.quality <- c(km.quality, km.temp)
+  }
+  seed.list <- seed.seq[which(km.quality == min(km.quality))]
+  km <- as.list(rep(NA, length(seed.list)))
+  for( i in 1:length(seed.list)){
+    set.seed(seed.list[i])
+    km[[i]] <- kmeans(t,  centers = num.means)
+  }
+  min.size.clusters <- sapply(km, function(x) min(x$size))
+  max.min.size.cluster <- which(min.size.clusters == max((sapply(km, function(x) min(x$size)))))[1]
+  
+  clustering.data$cluster <- as.factor(km[[max.min.size.cluster]]$cluster)
   
   # Creating empty list to contain stratified folds
   cluster.list <- as.list(rep(NA,length(unique(clustering.data$cluster))))

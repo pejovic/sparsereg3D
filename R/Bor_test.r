@@ -227,12 +227,18 @@ ORCDRC.n.coeffs <- n.coeffs(l.coeffs = cmL.ORCDRC, p.coeffs = cmP.ORCDRC)
 #ORCDRC.results <- list(ORCDRC.ncv = ORCDRC.ncv, l.coeffs = cmL.ORCDRC, p.coeffs = cmP.ORCDRC, IntP.ORCDRC = IntP.ORCDRC, IntHP.ORCDRC = IntHP.ORCDRC, BaseP.ORCDRC = BaseP.ORCDRC)
 #save(ORCDRC.results, file = "ORCDRC.results.rda" )
 #==============================================================================================================================================
-seed = 322
+seed = 1
 
 log.ORCDRC.fun <- as.formula(paste("logORCDRC ~", paste(c(CovNames,"depth"), collapse="+")))
+fun.path <- "D:/R_projects/sparsereg3D/R"
+source(paste(fun.path,"stratfold3d.r",sep="/"))
+source(paste(fun.path,"pre.sparsereg3D.r",sep="/"))
+source(paste(fun.path,"sparsereg3D.ncv.r",sep="/"))
+source(paste(fun.path,"sparsereg3D.pred.r",sep="/"))
+source(paste(fun.path,"sparsereg3D.sel.r",sep="/"))
 
 # logORCDRC results
-BaseL.logORCDRC.preproc <- pre.sparsereg3D(base.model = log.ORCDRC.fun, use.hier = FALSE, profiles = bor.profs, use.interactions = FALSE, seed = seed, poly.deg = 1, num.folds = 5, num.means = 3, cov.grids = gridmaps.sm2D, kmean.vars = all.vars(log.ORCDRC.fun), cum.prop = 0.90)    
+BaseL.logORCDRC.preproc <- pre.sparsereg3D(base.model = log.ORCDRC.fun, use.hier = FALSE, profiles = bor.profs, use.interactions = FALSE, seed = seed, poly.deg = 1, num.folds = 5, num.means = 3, cov.grids = gridmaps.sm2D, kmean.vars = all.vars(log.ORCDRC.fun), cum.prop = 0.90)    #, kmean.vars = all.vars(log.ORCDRC.fun), cum.prop = 0.90
 BaseL.logORCDRC.ncv.time <- system.time(BaseL.logORCDRC.ncv <- sparsereg3D.ncv(sparse.reg = BaseL.logORCDRC.preproc, lambda = seq(0,0.2,0.001)))
 BaseL.logORCDRC.time <- system.time(BaseL.logORCDRC <- sparsereg3D.sel(sparse.reg = BaseL.logORCDRC.preproc ,lambda = seq(0,0.2,0.001)))
 #logORCDRC.l.pred <- sparsereg3D.pred(model.info = BaseL.logORCDRC, chunk.size = 20000, grids = gridmaps.sm2D, depths = c(-0.1,-0.2,-0.3))
@@ -252,6 +258,8 @@ IntP.logORCDRC.preproc <- pre.sparsereg3D(base.model = log.ORCDRC.fun, use.hier 
 IntP.logORCDRC.ncv.time <- system.time(IntP.logORCDRC.ncv <- sparsereg3D.ncv(sparse.reg = IntP.logORCDRC.preproc, lambda = seq(0,0.2,0.001)))
 IntP.logORCDRC.time <- system.time(IntP.logORCDRC <- sparsereg3D.sel(sparse.reg = IntP.logORCDRC.preproc ,lambda = seq(0,0.2,0.001)))
 #logORCDRC.l.pred <- sparsereg3D.pred(model.info = IntP.logORCDRC, chunk.size = 20000, grids = gridmaps.sm2D, depths = c(-0.1,-0.2,-0.3))
+
+rbind(BaseL.logORCDRC.ncv[1:2], BaseP.logORCDRC.ncv[1:2], IntL.logORCDRC.ncv[1:2], IntP.logORCDRC.ncv[1:2])
 
 library(doParallel)
 
@@ -365,9 +373,15 @@ logORCDRC.n.coeffs <- n.coeffs(l.coeffs = cmL.logORCDRC, p.coeffs = cmP.logORCDR
 #==============================================================================================================================================
 
 
-seed = 322
+seed = 1
 
 pH.fun <- as.formula(paste("pH ~", paste(c(CovNames,"depth"), collapse="+")))
+fun.path <- "D:/R_projects/sparsereg3D/R"
+source(paste(fun.path,"stratfold3d.r",sep="/"))
+source(paste(fun.path,"pre.sparsereg3D.r",sep="/"))
+source(paste(fun.path,"sparsereg3D.ncv.r",sep="/"))
+source(paste(fun.path,"sparsereg3D.pred.r",sep="/"))
+source(paste(fun.path,"sparsereg3D.sel.r",sep="/"))
 
 # pH results
 BaseL.pH.preproc <- pre.sparsereg3D(base.model = pH.fun, use.hier = FALSE, profiles = bor.profs, use.interactions = FALSE, seed = seed, poly.deg = 1, num.folds = 5, num.means = 3, cov.grids = gridmaps.sm2D, kmean.vars = all.vars(log.ORCDRC.fun), cum.prop = 0.90)    
@@ -390,6 +404,8 @@ IntP.pH.preproc <- pre.sparsereg3D(base.model = pH.fun, use.hier = FALSE, profil
 IntP.pH.ncv.time <- system.time(IntP.pH.ncv <- sparsereg3D.ncv(sparse.reg = IntP.pH.preproc, lambda = seq(0,0.2,0.001)))
 IntP.pH.time <- system.time(IntP.pH <- sparsereg3D.sel(sparse.reg = IntP.pH.preproc ,lambda = seq(0,0.2,0.001)))
 #pH.l.pred <- sparsereg3D.pred(model.info = IntP.pH, chunk.size = 20000, grids = gridmaps.sm2D, depths = c(-0.1,-0.2,-0.3))
+
+rbind(BaseL.pH.ncv[1:2], BaseP.pH.ncv[1:2], IntL.pH.ncv[1:2], IntP.pH.ncv[1:2])
 
 library(doParallel)
 

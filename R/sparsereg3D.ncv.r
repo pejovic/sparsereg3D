@@ -45,6 +45,7 @@ sparsereg3D.ncv <- function(sparse.reg, lambda){
     test.data <- profiles[which(profiles$ID %in% profile.fold.list[[i]]),]
     training.obs.ind <- which(profiles$ID %in% do.call(c, profile.fold.list[-i]))
     training.data <- profiles[training.obs.ind,]
+    weight.data <- training.data[,c("mid.depth","hdepth")]
     
     # Inner crossvalidation partitioning
     tmp <- stratfold3d(target.name = target.name, other.names = kmean.vars , data = training.data, num.folds = num.folds, seed = seed, num.means = num.means, cum.prop = cum.prop)
@@ -69,7 +70,7 @@ sparsereg3D.ncv <- function(sparse.reg, lambda){
       }
       
       # Inner crossvalidation loop with model selection
-      lasso.cv <- cv.glmnet(as.matrix(training.data[,-1]), training.data[,1], alpha = 1,lambda = lambda, foldid = inner.fold.indices, type.measure = "mse")
+      lasso.cv <- cv.glmnet(as.matrix(training.data[,-1]), training.data[,1], alpha = 1,lambda = lambda, foldid = inner.fold.indices, type.measure = "mse", weights = 1/(1 + 0*weight.data[,"hdepth"]/100 + 1*abs(weight.data[,"mid.depth"]-max(weight.data[,"mid.depth"])))) #
       coef.list <- coef(lasso.cv, s = "lambda.min")
       lambda.min <- lasso.cv$lambda.min
       models.ncv[[i]] <- as.list(c(coefficients = coef.list, lambda = lambda.min))
