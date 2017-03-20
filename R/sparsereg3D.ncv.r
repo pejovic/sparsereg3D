@@ -14,7 +14,7 @@
 #sparse.reg = pre.som
 #lambda = seq(0,5,0.1)
 
-sparsereg3D.ncv <- function(sparse.reg, lambda){
+sparsereg3D.ncv <- function(sparse.reg, lambda, w = NULL){
   
   # Extracting data from sparse.reg object
   seed <- sparse.reg$folds$seed
@@ -68,17 +68,34 @@ sparsereg3D.ncv <- function(sparse.reg, lambda){
       for(j in 1:length(inner.obs.fold.list)){
         inner.fold.indices[inner.obs.fold.list[[j]]] <- j
       }
+## MLADEN      
+      if(is.null(w)){
+        train.cv <- cv.glmnet(as.matrix(training.data[,-1]), training.data[,1], alpha = 1, lambda = lambda, foldid = inner.fold.indices, type.measure = "mse", weights = 1/(1 + 0*weight.data[,"hdepth"]/100 + 0*abs(weight.data[,"mid.depth"]-max(weight.data[,"mid.depth"])))) #
+        lasso <- train.cv$glmnet.fit
+        lambda.min <- train.cv$lambda.min
+        min.cv.error <- min(train.cv$cvm)
+      }else{
+        train.cv.errors <- matrix(NA, nrow = length(w), ncol = length(lambda))
+        for(j in 1:length(w)){
+          train.cv.errors[j,] <- cv.glmnet(as.matrix(training.data[,-1]), training.data[,1], alpha = 1,lambda = lambda, foldid = inner.fold.indices, type.measure = "mse", weights = 1/(1 + 0*weight.data[,"hdepth"]/100 + w[j]*abs(weight.data[,"mid.depth"]-max(weight.data[,"mid.depth"]))))$cvm #
+        }
+        min.cv.error <- min(train.cv.errors)
+        min.ind <- which(train.cv.errors == min(train.cv.errors), arr.ind=TRUE) # ova funkcija daje kolonu i red minimalne greske
+        lambda.min <- sort(lambda, decreasing = TRUE)[min.ind[2]]
+        train.cv <- cv.glmnet(as.matrix(training.data[,-1]), training.data[,1], alpha = 1, lambda = lambda, foldid = inner.fold.indices, type.measure = "mse", weights = 1/(1 + 0*weight.data[,"hdepth"]/100 + w[min.ind[1]]*abs(weight.data[,"mid.depth"]-max(weight.data[,"mid.depth"]))) )
+        lasso <- train.cv$glmnet.fit # Ovde sam opet koristio cv.glmnet i ako sam trebao samo glmnet, samo iz ocaja...da bude potpuno isto kao i za slucaj bez tezina.
+        }
+## MLADEN      
       
       # Inner crossvalidation loop with model selection
-      lasso.cv <- cv.glmnet(as.matrix(training.data[,-1]), training.data[,1], alpha = 1,lambda = lambda, foldid = inner.fold.indices, type.measure = "mse", weights = 1/(1 + 0*weight.data[,"hdepth"]/100 + 1*abs(weight.data[,"mid.depth"]-max(weight.data[,"mid.depth"])))) #
-      coef.list <- coef(lasso.cv, s = "lambda.min")
-      lambda.min <- lasso.cv$lambda.min
+      #lasso.cv <- cv.glmnet(as.matrix(training.data[,-1]), training.data[,1], alpha = 1,lambda = lambda, foldid = inner.fold.indices, type.measure = "mse", weights = 1/(1 + 0*weight.data[,"hdepth"]/100 + w[min.ind[1]]*abs(weight.data[,"mid.depth"]-max(profiles[,"mid.depth"])))) #
+      coef.list <- coef(lasso, s = lambda.min)
       models.ncv[[i]] <- as.list(c(coefficients = coef.list, lambda = lambda.min))
       # Prediction on test set
-      test.pred <- predict(lasso.cv, s = lasso.cv$lambda.min, newx = as.matrix(test.data[,-1]))
+      test.pred <- predict(lasso, s = lambda.min, newx = as.matrix(test.data[,-1]))
       test.pred <- pmax(test.pred, target.min/3)
       
-      training.pred <- predict(lasso.cv, s = lasso.cv$lambda.min, newx = as.matrix(training.data[,-1]))
+      training.pred <- predict(lasso, s = lambda.min, newx = as.matrix(training.data[,-1]))
       training.pred <- pmax(training.pred, target.min/3)
       
     }else{
@@ -121,7 +138,7 @@ sparsereg3D.ncv <- function(sparse.reg, lambda){
     
     training.obs.pred <- data.frame(obs = training.data[,target.name], pred = as.numeric(training.pred))
     
-    if(!use.hier){accuracy[[i]] <- c(defaultSummary(test.obs.pred), RMSEcv = sqrt(min(lasso.cv$cvm)))}else{accuracy[[i]] <- defaultSummary(test.obs.pred)}
+    if(!use.hier){accuracy[[i]] <- c(defaultSummary(test.obs.pred), RMSEcv = sqrt(min.cv.error))}else{accuracy[[i]] <- defaultSummary(test.obs.pred)}
     
 
     obs.pred <- data.frame(test.data, pred = as.numeric(test.pred))
