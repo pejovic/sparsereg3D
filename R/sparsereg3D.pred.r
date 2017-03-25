@@ -53,7 +53,8 @@ sparsereg3D.pred <- function(model.info, depths, grids, chunk.size) {
   
   # Converting grids into data frames and renaming altitude column to depth column in each grid, besause function mclapply uses word altitude to denote depth
   covs.data <- mclapply(grids.3D, function(x) as.data.frame(x), mc.cores = num.cores)
-  covs.data <- lapply(covs.data, function(x) {plyr::rename(x, replace=c("altitude" = "depth"))}) 
+  coord.names <- tail(colnames(covs.data[[1]]),3); coord.names.ind <- which(names(covs.data[[1]]) %in% coord.names)
+  covs.data <- lapply(covs.data, function(x) {names(x)[coord.names.ind] <- c("x", "y", "depth"); x}) 
   
   # Adding polynomial depth variables in each grid
   if(poly.deg > 1) { 
@@ -74,9 +75,15 @@ sparsereg3D.pred <- function(model.info, depths, grids, chunk.size) {
     m.cores <- detectCores()
     registerDoParallel(cores = m.cores)
     
+    
+    f <- as.formula(~ .^2)
+    #interactions <- hierNet::compute.interactions.c(as.matrix(profiles[,-c(which(colnames(profiles) %in% c("ID",target.name,"hdepth",coord.names)))]),diagonal=FALSE)
 
       for(i in 1:length(covs.int.data)){ 
-        covs.int.data[[i]] <- foreach(j = 1:length(covs.int.data[[i]]),.combine="rbind") %dopar% {hierNet::compute.interactions.c(as.matrix(covs.int.data[[i]][[j]]),diagonal = FALSE)}
+         covs.int.data[[i]] <- foreach(j = 1:length(covs.int.data[[i]]),.combine="rbind") %dopar% {model.matrix(f, (covs.int.data[[i]][[j]]))}
+         covs.int.data[[i]] <- covs.int.data[[i]][,-which(colnames(covs.int.data[[i]]) %in% c("(Intercept)", main.effect.names))]
+         
+         #covs.int.data[[i]] <- foreach(j = 1:length(covs.int.data[[i]]),.combine="rbind") %dopar% {hierNet::compute.interactions.c(as.matrix(covs.int.data[[i]][[j]]),diagonal = FALSE)}
       }
   }
   
