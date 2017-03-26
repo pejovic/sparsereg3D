@@ -55,7 +55,7 @@ n.coeffs <- function(l.coeffs,p.coeffs){
 
 #list modis files
 
-modis.list<- dir(path=paste(path,"MODIS", sep = "/"), pattern=glob2rx("*.tif"), full.names=FALSE)
+modis.list <- dir(path=paste(path,"MODIS", sep = "/"), pattern=glob2rx("*.tif"), full.names=FALSE)
 
 modis <- readGDAL(paste(path, "MODIS", modis.list[1],sep="/"))
 names(modis)[1]<-sub(".tif","",modis.list[1])
@@ -118,14 +118,22 @@ stack.cat.grids <- resample(stack.cat.grids, stack.modis, method = "ngb")
 
 grids250 <- stack(stack.con.grids, stack.cat.grids, stack.con.grids250, stack.modis)
 names(grids250)
-cov.maps <- as(grids250, "SpatialPixelsDataFrame")
+grids750 <- aggregate(grids250, fact=3)
+cov.maps <- as(grids750, "SpatialPixelsDataFrame")
 
+#Drenthe <- readOGR(dsn = path, layer = "Drenthe")
+#Drenthe <- spTransform(Drenthe, proj4string(grids250))
+#Drenthe <- crop(grids250, Drenthe)
+#Drenthe <- as(Drenthe, "SpatialPixelsDataFrame")
 
 factors <- c("geomorfology", "landcover1970", "landcover1992", "landcover2004", "soilmap", "groundwater")
 f <- colwise(as.factor, .cols = factors)
 cov.maps@data[,factors] <- f(cov.maps@data[,factors])
+Drenthe@data[,factors] <- f(Drenthe@data[,factors])
+
 
 str(cov.maps)
+str(Drenthe)
 
 #Data
 SITE <- read.csv(paste("C:/Users/User/Dropbox/Extensions of soil 3D trend models/GSIF_competition_NL", "Alterra_Soil_xy.csv", sep="/"), header = TRUE)
@@ -167,7 +175,7 @@ proj4string(SPROPS.Alterra) <- "+init=epsg:28992"
 
 nl.profiles <- SPROPS.Alterra
 
-nl.profiles@horizons <- nl.profiles@horizons[nl.profiles@horizons$Bottom < 150, ]
+#nl.profiles@horizons <- nl.profiles@horizons[nl.profiles@horizons$Bottom < 150, ]
 #plot(nl.profiles[610:635,])
 
 str(nl.profiles)
@@ -201,7 +209,7 @@ IntL.logORC.time <- system.time(IntL.logORC <- sparsereg3D.sel(sparse.reg = IntL
 IntP.logORC.preproc <- pre.sparsereg3D(base.model = SOCformula, use.hier = FALSE, profiles = nl.profiles, use.interactions = TRUE, poly.deg = 3, num.folds = 5, num.means = 3, cov.grids = cov.maps, seed = seed, cum.prop = 0.90)    
 IntP.logORC.ncv.time <- system.time(IntP.logORC.ncv <- sparsereg3D.ncv(sparse.reg = IntP.logORC.preproc, lambda = seq(0,0.2,0.001), w = NULL))
 IntP.logORC.time <- system.time(IntP.logORC <- sparsereg3D.sel(sparse.reg = IntP.logORC.preproc ,lambda = seq(0,0.2,0.001)))
-#logORC.l.pred <- sparsereg3D.pred(model.info = IntP.logORC, chunk.size = 20000, grids = cov.maps, depths = c(-0.1,-0.2,-0.3))
+logORC.l.pred <- sparsereg3D.pred(model.info = IntP.logORC, chunk.size = 20000, grids = cov.maps, depths = c(-0.1))
 
 rbind(BaseL.logORC.ncv[1:2], BaseP.logORC.ncv[1:2], IntL.logORC.ncv[1:2], IntP.logORC.ncv[1:2])
 

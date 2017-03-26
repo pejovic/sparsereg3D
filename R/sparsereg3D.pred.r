@@ -25,6 +25,8 @@ sparsereg3D.pred <- function(model.info, depths, grids, chunk.size) {
   poly.deg <- model.info$model$poly.deg
   base.model <- model.info$model$base.model
   
+  grids <- grids[complete.cases(grids@data[,names(grids@data)]), names(grids@data)]
+  
   # creating list of classes of each categorical variables that were used in training 
   factor.lvls <- std.par$dummy.par$lvls
   
@@ -38,14 +40,14 @@ sparsereg3D.pred <- function(model.info, depths, grids, chunk.size) {
   
   # masking of such classes by the second most dominant class
   for(j in names(std.par$dummy.par$lvls[ind])){
-    grids@data[,j] <- ifelse(as.character(grids@data[,j]) %in% factor.lvls[[j]], attr(sort(summary(grids@data[,j]), decreasing = TRUE)[2], "names"), as.character(grids@data[,j]))
-    grids@data[,j] <- factor(grids@data[,j])
+    if((sum(as.character(grids@data[,j]) %in% factor.lvls[[j]]) > 0)){
+      #grids@data[,j] <- as.character(grids@data[,j])
+      grids@data[as.character(grids@data[,j]) %in% factor.lvls[[j]], j] <- attr(sort(summary(grids@data[,j]), decreasing = TRUE)[2], "names")
+      grids@data[,j] <- factor(grids@data[,j])
+    }
   }
-  
-  #profiles[complete.cases(profiles[,c("ID",coord.names,"hdepth","depth",target.name)]),c("ID",target.name,"hdepth",coord.names,"depth")]
-  grids <- grids[complete.cases(grids@data[,names(grids@data)]), names(grids@data)]
-  
-    # Creating 3list of grids, each corresponds to different depth
+
+  # Creating 3list of grids, each corresponds to different depth
   grids.3D <- sp3D(grids, stdepths = depths) 
   
   # Number of cores has to be 1, because function mclapply does not work on many cores
@@ -60,6 +62,8 @@ sparsereg3D.pred <- function(model.info, depths, grids, chunk.size) {
   if(poly.deg > 1) { 
     covs.data <- lapply(covs.data, function(x) x <- cbind(x, poly(x$depth, poly.deg, raw=TRUE, simple=TRUE)[,-1]))
     covs.data <- lapply(covs.data, function(x) {names(x) <- c(names(x)[1:(length(names(x))-(poly.deg))], c("depth",paste("depth",c(2:poly.deg),sep="")));return(x)})
+    #covs.data <- lapply(covs.data, function(x) {x <- x[complete.cases(x),]; return(x)})
+    #covs.data <- lapply(covs.data, function(x) {catcolwise(as.factor); return(x)})
   }
   
   # Applying standardization parameters for dummy coding to transform categorical variables in each grid
