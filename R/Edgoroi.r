@@ -148,7 +148,12 @@ IntL.pH.time <- system.time(IntL.pH <- sparsereg3D.sel(sparse.reg = IntL.pH.prep
 IntP.pH.preproc <- pre.sparsereg3D(base.model = formulaString, use.hier = FALSE, profiles = edgeroi.spc, use.interactions = TRUE, poly.deg = 3, num.folds = 5, num.means = 3, cov.grids = cov.maps, seed = seed)#, kmean.vars = all.vars(formulaString), cum.prop = 0.9)    
 IntP.pH.ncv.time <- system.time(IntP.pH.ncv <- sparsereg3D.ncv(sparse.reg = IntP.pH.preproc, lambda = seq(0,0.2,0.001), w = NULL))
 IntP.pH.time <- system.time(IntP.pH <- sparsereg3D.sel(sparse.reg = IntP.pH.preproc ,lambda = seq(0,0.2,0.001)))
-#pH.l.pred <- sparsereg3D.pred(model.info = IntP.pH, chunk.size = 20000, grids = cov.maps, depths = c(-0.1,-0.2,-0.3))
+pH.l.pred <- sparsereg3D.pred(model.info = IntP.pH, chunk.size = 20000, grids = cov.maps, depths = c(-0.05, -0.15, -0.30))
+
+##### Writing prediction to file ##########################################
+writeGDAL(pH.l.pred[[1]], paste("D:/R_projects","Edg.pH.pred1.tiff",sep="/"),drivername = "GTiff")
+writeGDAL(pH.l.pred[[2]], paste("D:/R_projects","Edg.pH.pred2.tiff",sep="/"),drivername = "GTiff")
+writeGDAL(pH.l.pred[[3]], paste("D:/R_projects","Edg.pH.pred3.tiff",sep="/"),drivername = "GTiff")
 
 
 rbind(BaseL.pH.ncv[1:2], BaseP.pH.ncv[1:2], IntL.pH.ncv[1:2], IntP.pH.ncv[1:2])
@@ -199,7 +204,7 @@ ll <- length(IntL.pH$coefficients)
 pp <- length(IntHL.pH$coefficients[,1])+1
 
 cmL.pH <- data.frame(variable=IntHL.pH$coefficients[,1], BaseL.pH.me=BaseL.pH$coefficients[2:pp], IntL.pH.me=IntL.pH$coefficients[2:pp],IntL.pH.ie=c(IntL.pH$coefficients[(pp+1):ll],0),IntHL.pH.me=IntHL.pH$coefficients[,2],IntHL.pH.ie=IntHL.pH$coefficients[,3] )
-
+stargazer(cmL.pH, summary = FALSE, digits = 2, type = "latex")
 
 #============================= Coefficients for models with polynomial depth function ===========================================================
 l <- length(IntP.pH$coefficients)
@@ -210,6 +215,8 @@ i3 <- seq(3,l-p,3)
 
 cmP.pH <- data.frame(variable=IntHP.pH$coefficients[,1], BaseP.pH.me=BaseP.pH$coefficients[2:p], IntP.pH.me=IntP.pH$coefficients[2:p],IntP.pH.ie1=c(IntP.pH$coefficients[(p+1):l][i1],0,0,0),IntP.pH.ie2=c(IntP.pH$coefficients[(p+1):l][i2],0,0,0),IntP.pH.ie3=c(IntP.pH$coefficients[(p+1):l][i3],0,0,0),IntHP.pH.me=IntHP.pH$coefficients[,2],IntHP.pH.ie1=IntHP.pH$coefficients[,3],IntHP.pH.ie2=IntHP.pH$coefficients[,4],IntHP.pH.ie3=IntHP.pH$coefficients[,5] )
 cmpH <- cmP.pH[,c(1,7:10)]
+
+stargazer(cmP.pH, summary = FALSE, digits = 2, type = "latex")
 
 # Models comparison
 pH.ncv <- data.frame(rbind(BaseL = BaseL.pH.ncv[1:2], BaseP = BaseP.pH.ncv[1:2], IntL = IntL.pH.ncv[1:2], IntP = IntP.pH.ncv[1:2], IntHL = IntHL.pH.ncv[1:2], IntHP = IntHP.pH.ncv[1:2]))
@@ -262,9 +269,16 @@ logORC.l.pred <- sparsereg3D.pred(model.info = IntL.logORC, chunk.size = 20000, 
 IntP.logORC.preproc <- pre.sparsereg3D(base.model = formulaString, use.hier = FALSE, profiles = edgeroi.spc, use.interactions = TRUE, poly.deg = 3, num.folds = 5, num.means = 3, cov.grids = cov.maps, seed = seed)#, kmean.vars = all.vars(formulaString), cum.prop = 0.90)    
 IntP.logORC.ncv.time <- system.time(IntP.logORC.ncv <- sparsereg3D.ncv(sparse.reg = IntP.logORC.preproc, lambda = seq(0,0.2,0.001), w = NULL))
 IntP.logORC.time <- system.time(IntP.logORC <- sparsereg3D.sel(sparse.reg = IntP.logORC.preproc ,lambda = seq(0,0.2,0.001)))
-logORC.l.pred <- sparsereg3D.pred(model.info = IntP.logORC, chunk.size = 20000, grids = cov.maps, depths = c(-0.1,-0.4))
+logORC.l.pred <- sparsereg3D.pred(model.info = IntP.logORC, chunk.size = 20000, grids = cov.maps, depths = c(-0.05, -0.15, -0.3))
 
-source(paste(fun.path,"sparsereg3D.pred.r",sep="/"))
+logORC.l.pred[[1]]$pred <- expm1(logORC.l.pred[[1]]$pred)
+logORC.l.pred[[2]]$pred <- expm1(logORC.l.pred[[2]]$pred)
+logORC.l.pred[[3]]$pred <- expm1(logORC.l.pred[[3]]$pred)
+
+##### Writing prediction to file ##########################################
+writeGDAL(logORC.l.pred[[1]], paste("D:/R_projects","Edg.logSOC.pred1.tiff",sep="/"),drivername = "GTiff")
+writeGDAL(logORC.l.pred[[2]], paste("D:/R_projects","Edg.logSOC.pred2.tiff",sep="/"),drivername = "GTiff")
+writeGDAL(logORC.l.pred[[3]], paste("D:/R_projects","Edg.logSOC.pred3.tiff",sep="/"),drivername = "GTiff")
 
 #rbind(BaseL.logORC.ncv[1:2], BaseP.logORC.ncv[1:2], IntL.logORC.ncv[1:2], IntP.logORC.ncv[1:2])
 
@@ -315,6 +329,7 @@ pp <- length(IntHL.logORC$coefficients[,1])+1
 
 cmL.logORC <- data.frame(variable=IntHL.logORC$coefficients[,1], BaseL.logORC.me=BaseL.logORC$coefficients[2:pp], IntL.logORC.me=IntL.logORC$coefficients[2:pp],IntL.logORC.ie=c(IntL.logORC$coefficients[(pp+1):ll],0),IntHL.logORC.me=IntHL.logORC$coefficients[,2],IntHL.logORC.ie=IntHL.logORC$coefficients[,3] )
 
+stargazer(cmL.logORC, summary = FALSE, digits = 2, type = "latex")
 
 #============================= Coefficients for models with polynomial depth function ===========================================================
 l <- length(IntP.logORC$coefficients)
@@ -325,6 +340,8 @@ i3 <- seq(3,l-p,3)
 
 cmP.logORC <- data.frame(variable=IntHP.logORC$coefficients[,1], BaseP.logORC.me=BaseP.logORC$coefficients[2:p], IntP.logORC.me=IntP.logORC$coefficients[2:p],IntP.logORC.ie1=c(IntP.logORC$coefficients[(p+1):l][i1],0,0,0),IntP.logORC.ie2=c(IntP.logORC$coefficients[(p+1):l][i2],0,0,0),IntP.logORC.ie3=c(IntP.logORC$coefficients[(p+1):l][i3],0,0,0),IntHP.logORC.me=IntHP.logORC$coefficients[,2],IntHP.logORC.ie1=IntHP.logORC$coefficients[,3],IntHP.logORC.ie2=IntHP.logORC$coefficients[,4],IntHP.logORC.ie3=IntHP.logORC$coefficients[,5] )
 cmlogORC <- cmP.logORC[,c(1,7:10)]
+
+stargazer(cmP.logORC, summary = FALSE, digits = 2, type = "latex")
 
 # Models comparison
 logORC.ncv <- data.frame(rbind(BaseL = BaseL.logORC.ncv[1:2], BaseP = BaseP.logORC.ncv[1:2], IntL = IntL.logORC.ncv[1:2], IntP = IntP.logORC.ncv[1:2], IntHL = IntHL.logORC.ncv[1:2], IntHP = IntHP.logORC.ncv[1:2]))
@@ -368,7 +385,7 @@ logORC.n.coeffs <- n.coeffs(l.coeffs = cmL.logORC, p.coeffs = cmP.logORC)
 #do.call(cbind, lapply(BaseL.logORC.ncv$models, function(x) x[[1]]))
 
 
-
+stargazer(cbind(logORC.n.coeffs, logORC.ncv[,-1], pH.n.coeffs[,-1], pH.ncv[,-1]), summary = FALSE, digits = 2, type = "latex")
 
 
 #load(file = "D:/R_projects/edgeroi_logORC_pH.RData")

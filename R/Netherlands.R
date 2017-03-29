@@ -116,10 +116,19 @@ stack.con.grids <- resample(stack.con.grids, stack.modis, method = "bilinear")
 stack.con.grids250 <- resample(stack.con.grids250, stack.modis, method = "bilinear")
 stack.cat.grids <- resample(stack.cat.grids, stack.modis, method = "ngb")
 
+stack.con.grids1000 <- aggregate(stack.con.grids250, fact = 2)
+stack.con.grids1000a <- aggregate(stack.con.grids, fact = 2)
+stack.cat.grids1000 <- aggregate(stack.cat.grids, fact = 2, fun = modal)
+stack.modis.1000 <- aggregate(stack.modis, fact = 2)
+
+
 grids250 <- stack(stack.con.grids, stack.cat.grids, stack.con.grids250, stack.modis)
+grids1000 <- stack(stack.con.grids1000, stack.con.grids1000a, stack.cat.grids1000, stack.modis.1000)
+
 names(grids250)
-grids750 <- aggregate(grids250, fact=3)
-cov.maps <- as(grids750, "SpatialPixelsDataFrame")
+
+cov.maps <- as(grids250, "SpatialPixelsDataFrame")
+cov.maps1000 <- as(grids1000, "SpatialPixelsDataFrame")
 
 #Drenthe <- readOGR(dsn = path, layer = "Drenthe")
 #Drenthe <- spTransform(Drenthe, proj4string(grids250))
@@ -129,11 +138,11 @@ cov.maps <- as(grids750, "SpatialPixelsDataFrame")
 factors <- c("geomorfology", "landcover1970", "landcover1992", "landcover2004", "soilmap", "groundwater")
 f <- colwise(as.factor, .cols = factors)
 cov.maps@data[,factors] <- f(cov.maps@data[,factors])
-Drenthe@data[,factors] <- f(Drenthe@data[,factors])
-
+#Drenthe@data[,factors] <- f(Drenthe@data[,factors])
+cov.maps1000@data[,factors] <- f(cov.maps1000@data[,factors])
 
 str(cov.maps)
-str(Drenthe)
+
 
 #Data
 SITE <- read.csv(paste("C:/Users/User/Dropbox/Extensions of soil 3D trend models/GSIF_competition_NL", "Alterra_Soil_xy.csv", sep="/"), header = TRUE)
@@ -209,7 +218,9 @@ IntL.logORC.time <- system.time(IntL.logORC <- sparsereg3D.sel(sparse.reg = IntL
 IntP.logORC.preproc <- pre.sparsereg3D(base.model = SOCformula, use.hier = FALSE, profiles = nl.profiles, use.interactions = TRUE, poly.deg = 3, num.folds = 5, num.means = 3, cov.grids = cov.maps, seed = seed, cum.prop = 0.90)    
 IntP.logORC.ncv.time <- system.time(IntP.logORC.ncv <- sparsereg3D.ncv(sparse.reg = IntP.logORC.preproc, lambda = seq(0,0.2,0.001), w = NULL))
 IntP.logORC.time <- system.time(IntP.logORC <- sparsereg3D.sel(sparse.reg = IntP.logORC.preproc ,lambda = seq(0,0.2,0.001)))
-logORC.l.pred <- sparsereg3D.pred(model.info = IntP.logORC, chunk.size = 20000, grids = cov.maps, depths = c(-0.1))
+logORC.l.pred <- sparsereg3D.pred(model.info = IntP.logORC, chunk.size = 20000, grids = cov.maps1000, depths = c(-0.05, -0.30))
+
+writeGDAL(gridresults[,"As1.rk.pred"], paste("D:/_Bor/prvi rad/dem/Covariates/Supplementary material","As1.rk.pred.tiff",sep="/"),drivername = "GTiff")
 
 rbind(BaseL.logORC.ncv[1:2], BaseP.logORC.ncv[1:2], IntL.logORC.ncv[1:2], IntP.logORC.ncv[1:2])
 

@@ -62,8 +62,8 @@ sparsereg3D.pred <- function(model.info, depths, grids, chunk.size) {
   if(poly.deg > 1) { 
     covs.data <- lapply(covs.data, function(x) x <- cbind(x, poly(x$depth, poly.deg, raw=TRUE, simple=TRUE)[,-1]))
     covs.data <- lapply(covs.data, function(x) {names(x) <- c(names(x)[1:(length(names(x))-(poly.deg))], c("depth",paste("depth",c(2:poly.deg),sep="")));return(x)})
-    #covs.data <- lapply(covs.data, function(x) {x <- x[complete.cases(x),]; return(x)})
-    #covs.data <- lapply(covs.data, function(x) {catcolwise(as.factor); return(x)})
+    covs.data <- lapply(covs.data, function(x) {x <- x[complete.cases(x),]; return(x)})
+    covs.data <- lapply(covs.data, function(x) {catcolwise(as.factor); return(x)})
   }
   
   # Applying standardization parameters for dummy coding to transform categorical variables in each grid
@@ -72,7 +72,7 @@ sparsereg3D.pred <- function(model.info, depths, grids, chunk.size) {
   # Splitting grids into chunks, computing interactions in parallel on these chunks
   if(use.interactions){
     n <- nrow(covs.data[[1]])
-    chunk.size <- round_any(n/3,1000)
+    chunk.size <- round_any(n/10,1000)
     r <- rep(1:ceiling(n/chunk.size),each = chunk.size)[1:n] 
     covs.int.data <- lapply(covs.data, function(x) as.data.frame(x)) %>% lapply(., function(x) split(x,r))
     
@@ -90,7 +90,7 @@ sparsereg3D.pred <- function(model.info, depths, grids, chunk.size) {
          #covs.int.data[[i]] <- foreach(j = 1:length(covs.int.data[[i]]),.combine="rbind") %dopar% {hierNet::compute.interactions.c(as.matrix(covs.int.data[[i]][[j]]),diagonal = FALSE)}
       }
   }
-  
+  stopImplicitCluster()
   # Combining main effect grids and grids with computed interactions
   for( i in 1:length(covs.int.data)) {
     covs.data[[i]] <- cbind(covs.data[[i]],covs.int.data[[i]])
@@ -110,17 +110,18 @@ sparsereg3D.pred <- function(model.info, depths, grids, chunk.size) {
     covs.data <- mclapply(covs.data, function(x) subset(x[,which(colnames(x) %in% c(main.effect.names,depth.int.names))]))
   }
   
-  
+  registerDoParallel(cores = m.cores)
   #Final prediction
-  for(i in 1:length(grids.3D)){
-    if(!use.hier){
-      grids.3D[[i]]$pred <- as.numeric(predict(model.info$model$model, s = model.info$model$model$lambda.min, newx = (covs.data[[i]])))
-    }else{
-      grids.3D[[i]]$pred <- as.numeric(predict(model.info$model$model, newx = covs.data[[i]], newzz = covs.int.data[[i]]))
+    for(i in 1:length(grids.3D)) {
+      if(!use.hier){
+        grids.3D[[i]]$pred <- as.numeric(predict(model.info$model$model, s = model.info$model$model$lambda.min, newx = (covs.data[[i]])))
+      }else{
+        grids.3D[[i]]$pred <- as.numeric(predict(model.info$model$model, newx = covs.data[[i]], newzz = covs.int.data[[i]]))
+      }
+      grids.3D[[i]]$pred <- pmax(grids.3D[[i]]$pred, 0) # TODO Ako bolje radi sa 0, staviti 0
+      grids.3D[[i]] <- grids.3D[[i]][,"pred"]
     }
-    grids.3D[[i]]$pred <- pmax(grids.3D[[i]]$pred, 0) # TODO Ako bolje radi sa 0, staviti 0
-    grids.3D[[i]] <- grids.3D[[i]][,"pred"]
-  }
-  
+ 
+  stopImplicitCluster()
   return(grids.3D)
 }
