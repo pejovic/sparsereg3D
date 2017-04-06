@@ -189,6 +189,32 @@ nl.profiles <- SPROPS.Alterra
 
 str(nl.profiles)
 
+#Aggregation profiles
+nl.profiles@horizons <- rename(nl.profiles@horizons, c("PHIKCL"="pH", "ORCDRC"="SOC"))
+agg <- slab(nl.profiles, fm= ~ SOC + pH, slab.structure=20)
+
+## see ?slab for details on the default aggregate function
+head(agg)
+
+Figure2 <- xyplot(top ~ p.q50 | variable, data=agg, ylab='Depth',
+                  xlab='median bounded by 25th and 75th percentiles',
+                  lower=agg$p.q25, upper=agg$p.q75, ylim=c(400,-2),
+                  panel=panel.depth_function,
+                  alpha=0.25, sync.colors=TRUE,
+                  par.settings=list(superpose.line=list(col='RoyalBlue', lwd=2)),
+                  prepanel=prepanel.depth_function,
+                  cf=agg$contributing_fraction, cf.col='black', cf.interval=20, 
+                  layout=c(2,1), strip=strip.custom(bg=grey(0.8)),
+                  scales=list(x=list(tick.number=4, alternating=3, relation='free'))
+)
+
+Figure2
+
+pdf("NLAgg.pdf",width=8,height=10)
+plot(Figure2) # Make plot
+dev.off()
+
+
 
 #load("nl.profs.rda")
 #load("nl.covs.rda")
@@ -303,6 +329,8 @@ logORC.n.coeffs <- n.coeffs(l.coeffs = cmL.logORC, p.coeffs = cmP.logORC)
 #===============================================================================================================================================================
 #===============================================================================================================================================================
 
+load("D:/R_projects/NL_start.RData")
+
 # pH 
 pHformula <- as.formula(paste(paste("PHIKCL ~ "), paste(c(names(cov.maps),"depth"), collapse="+")))
 pHformula
@@ -327,7 +355,7 @@ IntL.pH.time <- system.time(IntL.pH <- sparsereg3D.sel(sparse.reg = IntL.pH.prep
 IntP.pH.preproc <- pre.sparsereg3D(base.model = pHformula, use.hier = FALSE, profiles = nl.profiles, use.interactions = TRUE, poly.deg = 3, num.folds = 5, num.means = 3, cov.grids = cov.maps, seed = seed, kmean.vars = all.vars(pHformula), cum.prop = 0.90)    
 IntP.pH.ncv.time <- system.time(IntP.pH.ncv <- sparsereg3D.ncv(sparse.reg = IntP.pH.preproc, lambda = seq(0,0.2,0.001), w = NULL))
 IntP.pH.time <- system.time(IntP.pH <- sparsereg3D.sel(sparse.reg = IntP.pH.preproc ,lambda = seq(0,0.2,0.001)))
-#pH.l.pred <- sparsereg3D.pred(model.info = IntP.pH, chunk.size = 20000, grids = cov.maps, depths = c(-0.1,-0.2,-0.3))
+pH.l.pred <- sparsereg3D.pred(model.info = IntP.pH, chunk.size = 20000, grids = cov.maps, depths = c(-0.05))
 
 rbind(BaseL.pH.ncv[1:2], BaseP.pH.ncv[1:2], IntL.pH.ncv[1:2], IntP.pH.ncv[1:2])
 
@@ -461,4 +489,99 @@ dev.off()
 pdf("NL_pH.dif.pdf",width=10,height=6)
 pH.dif
 dev.off()
+
+load("D:/R_projects/NL_logSOC1.rda")
+logORC.pred <- logORC.l.pred[[1]]
+logORC.pred$pred <- (logORC.l.pred[[1]]$pred)
+logORC.pred@data <- plyr::rename(logORC.pred@data, replace = c("pred" = "prediction_0.05"))
+load("D:/R_projects/NL_logSOC2.rda")
+logORC.pred@data$prediction_0.15 <- (logORC.l.pred[[1]]$pred)
+load("D:/R_projects/NL_logSOC3.rda")
+logORC.pred@data$prediction_0.30 <- (logORC.l.pred[[1]]$pred)
+
+zmax <- max(logORC.pred$prediction_0.05, logORC.pred$prediction_0.15, logORC.pred$prediction_0.30)
+zmin <- min(logORC.pred$prediction_0.05, logORC.pred$prediction_0.15, logORC.pred$prediction_0.30)
+zmax <- round(zmax) 
+zmin <- round(zmin) 
+
+ramp <- seq(from = zmin, to = zmax, by = 0.1)
+color.SOM <- colorRampPalette(c("blue", "light green", "orange" , "red"))
+
+ckey <- list(labels=list(cex=2))
+
+p4 <- spplot(logORC.pred[,c(1,2,3)],  asp = 1, at = ramp, col.regions = color.SOM,colorkey=ckey, names.attr = c("5cm", "15cm", "30cm"))
+
+p1 <- spplot(logORC.pred, "prediction_0.05", asp = 1, at = ramp, col.regions = color.SOM,colorkey=FALSE)
+p2 <- spplot(logORC.pred, "prediction_0.15", asp = 1, at = ramp,  col.regions = color.SOM,colorkey=FALSE)
+p3 <- spplot(logORC.pred, "prediction_0.30", asp = 1, at = ramp, col.regions = color.SOM,colorkey=ckey) # last plot contains the legend
+
+
+pdf("NL_logSOC_5.pdf",width = 10, height = 12)
+p1
+dev.off()
+
+pdf("NL_logSOC_15.pdf", width = 10,height = 12)
+p2
+dev.off()
+
+
+pdf("NL_logSOC_30.pdf", width = 10,height = 12)
+p3
+dev.off()
+
+
+pdf("NL_logSOC_all.pdf", width = 20,height = 12)
+p4
+dev.off()
+
+#================== pH ==============================================================
+load("D:/R_projects/NL_pH1.rda")
+pH.pred <- pH.l.pred[[1]]
+pH.pred$pred <- (pH.l.pred[[1]]$pred)
+pH.pred@data <- plyr::rename(pH.pred@data, replace = c("pred" = "prediction_0.05"))
+load("D:/R_projects/NL_pH2.rda")
+pH.pred@data$prediction_0.15 <- (pH.l.pred[[1]]$pred)
+load("D:/R_projects/NL_pH3.rda")
+pH.pred@data$prediction_0.30 <- (pH.l.pred[[1]]$pred)
+
+zmax <- max(pH.pred$prediction_0.05, pH.pred$prediction_0.15, pH.pred$prediction_0.30)
+zmin <- min(pH.pred$prediction_0.05, pH.pred$prediction_0.15, pH.pred$prediction_0.30)
+zmax <- round(zmax) 
+zmin <- round(zmin) 
+
+ramp <- seq(from = zmin, to = zmax, by = 0.1)
+color.pH <- colorRampPalette(c("dark red", "yellow" ,"green", "blue"))
+
+ckey <- list(labels=list(cex=2))
+
+p4 <- spplot(pH.pred[,c(1,2,3)],  asp = 1, at = ramp, col.regions = color.SOM,colorkey=ckey, names.attr = c("5cm", "15cm", "30cm"))
+
+p1 <- spplot(pH.pred, "prediction_0.05", asp = 1, at = ramp, col.regions = color.SOM,colorkey=FALSE)
+p2 <- spplot(pH.pred, "prediction_0.15", asp = 1, at = ramp,  col.regions = color.SOM,colorkey=FALSE)
+p3 <- spplot(pH.pred, "prediction_0.30", asp = 1, at = ramp, col.regions = color.SOM,colorkey=ckey) # last plot contains the legend
+
+
+pdf("NL_pH_5.pdf",width = 10, height = 12)
+p1
+dev.off()
+
+pdf("NL_pH_15.pdf", width = 10,height = 12)
+p2
+dev.off()
+
+
+pdf("NL_pH_30.pdf", width = 10,height = 12)
+p3
+dev.off()
+
+
+pdf("NL_pH_all.pdf", width = 20,height = 12)
+p4
+dev.off()
+
+
+
+
+
+
 
