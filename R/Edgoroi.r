@@ -365,13 +365,13 @@ n.coeffs <- function(l.coeffs,p.coeffs){
   IntP <- p.coeffs[,3:6]
   IntHP <- p.coeffs[,7:10]
   
-  n.BaseL <-  data.frame(total = prod(dim(BaseL)), selected = sum(BaseL!=0 ), "Number of Variables" = sum((apply(BaseL,1, function(y) sum(y!=0)))), "main effects" = sum(BaseL!=0 ), "interaction effects" = 0 )
-  n.IntL <-   data.frame(total = prod(dim(IntL)),  selected = sum(apply(IntL,2, function(y) sum(y!=0))), "Number of Variables" = sum(count(apply(IntL,1, function(y) sum(y!=0)))[-1,2]) ,"main effects" = apply(IntL,2, function(y) sum(y!=0))[1], "interaction effects" = apply(IntL,2, function(y) sum(y!=0))[2])
-  n.IntHL <-   data.frame(total = prod(dim(IntHL)),  selected = sum(apply(IntHL,2, function(y) sum(y!=0))), "Number of Variables" = sum(count(apply(IntHL,1, function(y) sum(y!=0)))[-1,2]), "main effects" = apply(IntHL,2, function(y) sum(y!=0))[1], "interaction effects" = apply(IntHL,2, function(y) sum(y!=0))[2])
+  n.BaseL <-  data.frame(total = prod(dim(BaseL)), selected = sum(BaseL!=0 ), "Number of Variables" = sum(apply(BaseL,1, function(y) sum(abs(y)))!=0), "main effects" = sum(BaseL!=0 ), "interaction effects" = 0 )
+  n.IntL <-   data.frame(total = prod(dim(IntL)),  selected = sum(apply(IntL,2, function(y) sum(abs(y)!=0))), "Number of Variables" = sum(apply(IntL,1, function(y) sum(abs(y)))!=0) ,"main effects" = apply(IntL,2, function(y) sum(abs(y)!=0))[1], "interaction effects" = apply(IntL,2, function(y) sum(abs(y)!=0))[2])
+  n.IntHL <-   data.frame(total = prod(dim(IntHL)),  selected = sum(apply(IntHL,2, function(y) sum(abs(y)!=0))), "Number of Variables" = sum(apply(IntHL,1, function(y) sum(abs(y)))!=0), "main effects" = apply(IntHL,2, function(y) sum(abs(y)!=0))[1], "interaction effects" = apply(IntHL,2, function(y) sum(abs(y)!=0))[2])
   
-  n.BaseP <-  data.frame(total = prod(dim(BaseP)), selected = sum(BaseP!=0 ), "Number of Variables" = sum((apply(BaseP,1, function(y) sum(y!=0)))), "main effects" = sum(BaseP!=0 ), "interaction effects" = 0 )
-  n.IntP <-   data.frame(total = prod(dim(IntP)),  selected = sum(apply(IntP,2, function(y) sum(y!=0))), "Number of Variables" = sum(count(apply(IntP,1, function(y) sum(y!=0)))[-1,2]), "main effects" = apply(IntP,2, function(y) sum(y!=0))[1], "interaction effects" = sum(apply(IntP,2, function(y) sum(y!=0))[2:4]))
-  n.IntHP <-   data.frame(total = prod(dim(IntHP)),  selected = sum(apply(IntHP,2, function(y) sum(y!=0))), "Number of Variables" = sum(count(apply(IntHP,1, function(y) sum(y!=0)))[-1,2]), "main effects" = apply(IntHP,2, function(y) sum(y!=0))[1], "interaction effects" = sum(apply(IntHP,2, function(y) sum(y!=0))[2:4]))
+  n.BaseP <-  data.frame(total = prod(dim(BaseP)), selected = sum(BaseP!=0 ), "Number of Variables" = sum(apply(BaseP,1, function(y) sum(abs(y)))!=0), "main effects" = sum(BaseP!=0 ), "interaction effects" = 0 )
+  n.IntP <-   data.frame(total = prod(dim(IntP)),  selected = sum(apply(IntP,2, function(y) sum(abs(y)!=0))), "Number of Variables" = sum(apply(IntP[-c(dim(IntP)[1]:(dim(IntP)[1]-1)),], 1, function(y) sum(y))!=0), "main effects" = apply(IntP,2, function(y) sum(abs(y)!=0))[1], "interaction effects" = sum(apply(IntP,2, function(y) sum(abs(y)!=0))[2:4]))
+  n.IntHP <-   data.frame(total = prod(dim(IntHP)),  selected = sum(apply(IntHP,2, function(y) sum(abs(y)!=0))), "Number of Variables" = sum(apply(IntHP[-c(dim(IntHP)[1]:(dim(IntHP)[1]-1)),], 1, function(y) sum(abs(y)))!=0), "main effects" = apply(IntHP,2, function(y) sum(abs(y)!=0))[1], "interaction effects" = sum(apply(IntHP,2, function(y) sum(abs(y)!=0))[2:4]))
   
   
   total <- data.frame(rbind(n.BaseL,n.BaseP,n.IntL,n.IntP,n.IntHL,n.IntHP))
@@ -381,6 +381,7 @@ n.coeffs <- function(l.coeffs,p.coeffs){
 }
 
 logORC.n.coeffs <- n.coeffs(l.coeffs = cmL.logORC, p.coeffs = cmP.logORC)
+pH.n.coeffs <- n.coeffs(l.coeffs = cmL.pH, p.coeffs = cmP.pH)
 
 #do.call(cbind, lapply(BaseL.logORC.ncv$models, function(x) x[[1]]))
 
