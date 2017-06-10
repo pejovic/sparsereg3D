@@ -98,27 +98,27 @@ proj4string(edgeroi.spc) <- CRS(proj4string(edgeroi.grids))
 #plotKML(edg.kml["ORCDRC"])
 
 #Aggregation profiles
-edgeroi.spc@horizons <- rename(edgeroi.spc@horizons, c("PHIHO5"="pH", "ORCDRC"="SOC"))
-agg <- slab(edgeroi.spc, fm= ~ SOC + pH, slab.structure=20)
+edgeroi.spc@horizons <- rename(edgeroi.spc@horizons, c("PHIHO5"="pH", "log1pORC"="logSOC"))
+agg <- slab(edgeroi.spc, fm= ~ logSOC, slab.structure=20)
 
 ## see ?slab for details on the default aggregate function
 head(agg)
 
 Figure2 <- xyplot(top ~ p.q50 | variable, data=agg, ylab='Depth',
-                xlab='median bounded by 25th and 75th percentiles',
+                xlab='',
                 lower=agg$p.q25, upper=agg$p.q75, ylim=c(800,-2),
                 panel=panel.depth_function,
                 alpha=0.25, sync.colors=TRUE,
                 par.settings=list(superpose.line=list(col='RoyalBlue', lwd=2)),
                 prepanel=prepanel.depth_function,
-                cf=agg$contributing_fraction, cf.col='black', cf.interval=20, 
-                layout=c(2,1), strip=strip.custom(bg=grey(0.8)),
+                #cf=agg$contributing_fraction, cf.col='black', cf.interval=20, 
+                layout=c(1,1), strip=strip.custom(bg=grey(0.8)),
                 scales=list(x=list(tick.number=4, alternating=3, relation='free'))
 )
 
 Figure2
 
-pdf("EdgeroiAgg.pdf",width=6,height=8)
+pdf("EdgeroilogSOCAgg.pdf",width=4,height=6)
 plot(Figure2) # Make plot
 dev.off()
 #=================================================================== 
@@ -252,24 +252,24 @@ source(paste(fun.path,"pre.sparsereg3D.r",sep="/"))
 #sparsereg3D
 # logORC results
 BaseL.logORC.preproc <- pre.sparsereg3D(base.model = formulaString, use.hier = FALSE, profiles = edgeroi.spc, use.interactions = FALSE, poly.deg = 1, num.folds = 5, num.means = 3, cov.grids = cov.maps, seed = seed)#, kmean.vars = all.vars(formulaString), cum.prop = 0.90)     # , kmean.vars = all.vars(formulaString), cum.prop = 0.90
-BaseL.logORC.ncv.time <- system.time(BaseL.logORC.ncv <- sparsereg3D.ncv(sparse.reg = BaseL.logORC.preproc, lambda = seq(0,0.2,0.001), w = NULL)) #seq(0, 1, 0.1)
+BaseL.logORC.ncv.time <- system.time(BaseL.logORC.ncv <- sparsereg3D.ncv(sparse.reg = BaseL.logORC.preproc, lambda = seq(0,0.2,0.001))) #w = seq(0, 1, 0.1)
 BaseL.logORC.time <- system.time(BaseL.logORC <- sparsereg3D.sel(sparse.reg = BaseL.logORC.preproc ,lambda = seq(0,0.2,0.001)))
 #logORC.l.pred <- sparsereg3D.pred(model.info = BaseL.logORC, chunk.size = 20000, grids = cov.maps, depths = c(-0.1,-0.2,-0.3))
 
 BaseP.logORC.preproc <- pre.sparsereg3D(base.model = formulaString, use.hier = FALSE, profiles = edgeroi.spc, use.interactions = FALSE, poly.deg = 3, num.folds = 5, num.means = 3, cov.grids = cov.maps, seed = seed)#, kmean.vars = all.vars(formulaString), cum.prop = 0.90)    
-BaseP.logORC.ncv.time <- system.time(BaseP.logORC.ncv <- sparsereg3D.ncv(sparse.reg = BaseP.logORC.preproc, lambda = seq(0,0.2,0.001), w = NULL))
+BaseP.logORC.ncv.time <- system.time(BaseP.logORC.ncv <- sparsereg3D.ncv(sparse.reg = BaseP.logORC.preproc, lambda = seq(0,0.2,0.001)))
 BaseP.logORC.time <- system.time(BaseP.logORC <- sparsereg3D.sel(sparse.reg = BaseP.logORC.preproc ,lambda = seq(0,2,0.1)))
 #logORC.p.pred <- sparsereg3D.pred(model.info = logORC.p.sel, chunk.size = 20000, grids = cov.maps, depths = c(-0.1,-0.2,-0.3))
 
 IntL.logORC.preproc <- pre.sparsereg3D(base.model = formulaString, use.hier = FALSE, profiles = edgeroi.spc, use.interactions = TRUE, poly.deg = 1, num.folds = 5, num.means = 3, cov.grids = cov.maps, seed = seed)#, kmean.vars = all.vars(formulaString), cum.prop = 0.90)    
-IntL.logORC.ncv.time <- system.time(IntL.logORC.ncv <- sparsereg3D.ncv(sparse.reg = IntL.logORC.preproc, lambda = seq(0,0.2,0.001), w = NULL))
-IntL.logORC.time <- system.time(IntL.logORC <- sparsereg3D.sel(sparse.reg = IntL.logORC.preproc ,lambda = seq(0,0.2,0.001)))
-logORC.l.pred <- sparsereg3D.pred(model.info = IntL.logORC, chunk.size = 20000, grids = cov.maps, depths = c(-0.1,-0.2,-0.3))
+IntL.logORC.ncv.time <- system.time(IntL.logORC.ncv <- sparsereg3D.ncv(sparse.reg = IntL.logORC.preproc, lambda = seq(0,0.2,0.001), w = seq(0, 1, 0.1)))
+IntL.logORC.time <- system.time(IntL.logORC <- sparsereg3D.sel(sparse.reg = IntL.logORC.preproc ,lambda = seq(0,0.2,0.001))) 
+#logORC.l.pred <- sparsereg3D.pred(model.info = IntL.logORC, chunk.size = 20000, grids = cov.maps, depths = c(-0.1,-0.2,-0.3))
 
 IntP.logORC.preproc <- pre.sparsereg3D(base.model = formulaString, use.hier = FALSE, profiles = edgeroi.spc, use.interactions = TRUE, poly.deg = 3, num.folds = 5, num.means = 3, cov.grids = cov.maps, seed = seed)#, kmean.vars = all.vars(formulaString), cum.prop = 0.90)    
-IntP.logORC.ncv.time <- system.time(IntP.logORC.ncv <- sparsereg3D.ncv(sparse.reg = IntP.logORC.preproc, lambda = seq(0,0.2,0.001), w = NULL))
+IntP.logORC.ncv.time <- system.time(IntP.logORC.ncv <- sparsereg3D.ncv(sparse.reg = IntP.logORC.preproc, lambda = seq(0,0.2,0.001), w = seq(0, 5, 0.2)))
 IntP.logORC.time <- system.time(IntP.logORC <- sparsereg3D.sel(sparse.reg = IntP.logORC.preproc ,lambda = seq(0,0.2,0.001)))
-logORC.l.pred <- sparsereg3D.pred(model.info = IntP.logORC, chunk.size = 20000, grids = cov.maps, depths = c(-0.05, -0.15, -0.3))
+#logORC.l.pred <- sparsereg3D.pred(model.info = IntP.logORC, chunk.size = 20000, grids = cov.maps, depths = c(-0.05, -0.15, -0.3))
 
 logORC.l.pred[[1]]$pred <- expm1(logORC.l.pred[[1]]$pred)
 logORC.l.pred[[2]]$pred <- expm1(logORC.l.pred[[2]]$pred)
@@ -397,7 +397,7 @@ logSOC.formula <- as.formula(paste(paste("log1pORC ~ "), paste(c(names(cov.maps)
 pH.formula <- as.formula(paste(paste("PHIHO5 ~ "), paste(c(names(cov.maps),"depth"), collapse="+")))
 
 
-intbasedif <- function(formula, depth.inc, profiles, cov.grids, poly = 3, num.folds = 5, num.means = 3, poly.deg = poly.deg, seed = 1, lambda.seq = seq(0,0.2,0.001), weights = NULL){
+intbasedif <- function(formula, depth.inc, profiles, cov.grids, poly = 3, num.folds = 5, num.means = 3, poly.deg = poly.deg, seed = 1, lambda.seq = seq(0,0.2,0.001), weights = seq(0,5,0.2)){
   variable <- all.vars(formula)[1]
   seed = seed
   max.depth = max(profiles$Bottom)
@@ -429,12 +429,12 @@ intbasedif <- function(formula, depth.inc, profiles, cov.grids, poly = 3, num.fo
 }
 
 
-logSOC.dif <- intbasedif(formula = logSOC.formula, depth.inc = 100, profiles = edgeroi.spc, cov.grids = cov.maps, num.folds = 5, num.means = 3, poly.deg = 3, seed = 1, lambda.seq = seq(0,0.2,0.001), weights = NULL)
+logSOC.dif <- intbasedif(formula = logSOC.formula, depth.inc = 100, profiles = edgeroi.spc, cov.grids = cov.maps, num.folds = 5, num.means = 3, poly.deg = 3, seed = 1, lambda.seq = seq(0,0.2,0.001), weights = seq(0,5,0.2))
 pH.dif <- intbasedif(formula = pH.formula, depth.inc = 100, profiles = edgeroi.spc, cov.grids = cov.maps, num.folds = 5, num.means = 3, poly.deg = 3, seed = 1, lambda.seq = seq(0,0.2,0.001), weights = NULL)
 
 
 
-pdf("logSOC.dif.pdf",width=10,height=6)
+pdf("logSOC.wdif.pdf",width=10,height=6)
 logSOC.dif
 dev.off()
 

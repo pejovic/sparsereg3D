@@ -35,6 +35,7 @@ source(paste(fun.path,"sparsereg3D.ncv.r",sep="/"))
 source(paste(fun.path,"sparsereg3D.pred.r",sep="/"))
 source(paste(fun.path,"sparsereg3D.sel.r",sep="/"))
 
+
 n.coeffs <- function(l.coeffs,p.coeffs){
   BaseL <- data.frame(l.coeffs[,2])
   IntL <- l.coeffs[,3:4]
@@ -43,18 +44,18 @@ n.coeffs <- function(l.coeffs,p.coeffs){
   IntP <- p.coeffs[,3:6]
   IntHP <- p.coeffs[,7:10]
   
-  n.BaseL <-  data.frame(total = prod(dim(BaseL)), selected = sum(BaseL!=0 ), "main effects" = sum(BaseL!=0 ), "interaction effects" = 0 )
-  n.IntL <-   data.frame(total = prod(dim(IntL)),  selected = sum(apply(IntL,2, function(y) sum(y!=0))), "main effects" = apply(IntL,2, function(y) sum(y!=0))[1], "interaction effects" = apply(IntL,2, function(y) sum(y!=0))[2])
-  n.IntHL <-   data.frame(total = prod(dim(IntHL)),  selected = sum(apply(IntHL,2, function(y) sum(y!=0))), "main effects" = apply(IntHL,2, function(y) sum(y!=0))[1], "interaction effects" = apply(IntHL,2, function(y) sum(y!=0))[2])
+  n.BaseL <-  data.frame(total = prod(dim(BaseL)), selected = sum(BaseL!=0 ), "Number of Variables" = sum(apply(BaseL,1, function(y) sum(abs(y)))!=0), "main effects" = sum(BaseL!=0 ), "interaction effects" = 0 )
+  n.IntL <-   data.frame(total = prod(dim(IntL)),  selected = sum(apply(IntL,2, function(y) sum(abs(y)!=0))), "Number of Variables" = sum(apply(IntL,1, function(y) sum(abs(y)))!=0) ,"main effects" = apply(IntL,2, function(y) sum(abs(y)!=0))[1], "interaction effects" = apply(IntL,2, function(y) sum(abs(y)!=0))[2])
+  n.IntHL <-   data.frame(total = prod(dim(IntHL)),  selected = sum(apply(IntHL,2, function(y) sum(abs(y)!=0))), "Number of Variables" = sum(apply(IntHL,1, function(y) sum(abs(y)))!=0), "main effects" = apply(IntHL,2, function(y) sum(abs(y)!=0))[1], "interaction effects" = apply(IntHL,2, function(y) sum(abs(y)!=0))[2])
   
-  n.BaseP <-  data.frame(total = prod(dim(BaseP)), selected = sum(BaseP!=0 ), "main effects" = sum(BaseP!=0 ), "interaction effects" = 0 )
-  n.IntP <-   data.frame(total = prod(dim(IntP)),  selected = sum(apply(IntP,2, function(y) sum(y!=0))), "main effects" = apply(IntP,2, function(y) sum(y!=0))[1], "interaction effects" = sum(apply(IntP,2, function(y) sum(y!=0))[2:4]))
-  n.IntHP <-   data.frame(total = prod(dim(IntHP)),  selected = sum(apply(IntHP,2, function(y) sum(y!=0))), "main effects" = apply(IntHP,2, function(y) sum(y!=0))[1], "interaction effects" = sum(apply(IntHP,2, function(y) sum(y!=0))[2:4]))
+  n.BaseP <-  data.frame(total = prod(dim(BaseP)), selected = sum(BaseP!=0 ), "Number of Variables" = sum(apply(BaseP,1, function(y) sum(abs(y)))[1:(dim(BaseP)[1]-2)]!=0), "main effects" = sum(BaseP!=0 ), "interaction effects" = 0 )
+  n.IntP <-   data.frame(total = prod(dim(IntP)),  selected = sum(apply(IntP,2, function(y) sum(abs(y)!=0))), "Number of Variables" = sum(apply(IntP[-c(dim(IntP)[1]:(dim(IntP)[1]-1)),], 1, function(y) sum(y))[1:(dim(BaseP)[1]-2)]!=0), "main effects" = apply(IntP,2, function(y) sum(abs(y)!=0))[1], "interaction effects" = sum(apply(IntP,2, function(y) sum(abs(y)!=0))[2:4]))
+  n.IntHP <-   data.frame(total = prod(dim(IntHP)),  selected = sum(apply(IntHP,2, function(y) sum(abs(y)!=0))), "Number of Variables" = sum(apply(IntHP[-c(dim(IntHP)[1]:(dim(IntHP)[1]-1)),], 1, function(y) sum(abs(y)))[1:(dim(BaseP)[1]-2)]!=0), "main effects" = apply(IntHP,2, function(y) sum(abs(y)!=0))[1], "interaction effects" = sum(apply(IntHP,2, function(y) sum(abs(y)!=0))[2:4]))
   
   
   total <- data.frame(rbind(n.BaseL,n.BaseP,n.IntL,n.IntP,n.IntHL,n.IntHP))
   rownames(total) <- NULL
-  total <- cbind(model = c("BaseL","BaseP", "IntL","IntP", "IntHL","IntHP"), total)
+  total <- cbind(model = c("BaseL","BaseP", "IntL", "IntP","IntHL","IntHP"), total)
   return(total)
 }
 
@@ -82,27 +83,27 @@ proj4string(bor.profs) <- CRS(utm)
 #=====================================================================================
 
 #Aggregation profiles
-bor.profs@horizons <- rename(bor.profs@horizons, c("ORCDRC"="SOC"))
-agg <- slab(bor.profs, fm= ~ SOC + pH, slab.structure=seq(0,70,5))
+bor.profs@horizons <- rename(bor.profs@horizons, c("logORCDRC"="logSOC"))
+agg <- slab(bor.profs, fm= ~ logSOC, slab.structure=5)
 
 ## see ?slab for details on the default aggregate function
 head(agg)
 
 Figure2 <- xyplot(top ~ p.q50 | variable, data=agg, ylab='Depth',
-                  xlab='median bounded by 25th and 75th percentiles',
-                  lower=agg$p.q25, upper=agg$p.q75, ylim=c(70,-2),
+                  xlab="",
+                  lower=agg$p.q25, upper=agg$p.q75, ylim=c(130,-2),
                   panel=panel.depth_function,
                   alpha=0.25, sync.colors=TRUE,
                   par.settings=list(superpose.line=list(col='RoyalBlue', lwd=2)),
                   prepanel=prepanel.depth_function,
-                  cf=agg$contributing_fraction, cf.col='black', cf.interval=5, 
-                  layout=c(2,1), strip=strip.custom(bg=grey(0.8)),
+#                  cf=agg$contributing_fraction, cf.col='black', cf.interval=5, 
+                  layout=c(1,1), strip=strip.custom(bg=grey(0.8)),
                   scales=list(x=list(tick.number=4, alternating=3, relation='free'))
 )
 
 class(Figure2)
 
-pdf("BorAgg.pdf",width=6,height=8)
+pdf("BorlogSOCAgg.pdf",width=4,height=6)
 plot(Figure2) # Make plot
 dev.off()
 #==========================================================
@@ -164,23 +165,23 @@ log.ORCDRC.fun <- as.formula(paste("logORCDRC ~", paste(c(CovNames,"depth"), col
 
 # logORCDRC results
 BaseL.logORCDRC.preproc <- pre.sparsereg3D(base.model = log.ORCDRC.fun, use.hier = FALSE, profiles = bor.profs, use.interactions = FALSE, seed = seed, poly.deg = 1, num.folds = 5, num.means = 3, cov.grids = gridmaps.sm2D)    #, kmean.vars = all.vars(log.ORCDRC.fun), cum.prop = 0.90
-BaseL.logORCDRC.ncv.time <- system.time(BaseL.logORCDRC.ncv <- sparsereg3D.ncv(sparse.reg = BaseL.logORCDRC.preproc, lambda = seq(0,0.2,0.001), w = NULL)) #seq(0.1, 1, 0.1)
+BaseL.logORCDRC.ncv.time <- system.time(BaseL.logORCDRC.ncv <- sparsereg3D.ncv(sparse.reg = BaseL.logORCDRC.preproc, lambda = seq(0,0.2,0.001), w = seq(0.1, 1, 0.1))) #seq(0.1, 1, 0.1)
 BaseL.logORCDRC.time <- system.time(BaseL.logORCDRC <- sparsereg3D.sel(sparse.reg = BaseL.logORCDRC.preproc ,lambda = seq(0,0.2,0.001)))
 #logORCDRC.l.pred <- sparsereg3D.pred(model.info = BaseL.logORCDRC, chunk.size = 20000, grids = gridmaps.sm2D, depths = c(-0.1,-0.2,-0.3))
 
 BaseP.logORCDRC.preproc <- pre.sparsereg3D(base.model = log.ORCDRC.fun, use.hier = FALSE, profiles = bor.profs, use.interactions = FALSE, seed = seed, poly.deg = 3, num.folds = 5, num.means = 3, cov.grids = gridmaps.sm2D)  
-BaseP.logORCDRC.ncv.time <- system.time(BaseP.logORCDRC.ncv <- sparsereg3D.ncv(sparse.reg = BaseP.logORCDRC.preproc, lambda = seq(0,0.2,0.001), w = NULL))
+BaseP.logORCDRC.ncv.time <- system.time(BaseP.logORCDRC.ncv <- sparsereg3D.ncv(sparse.reg = BaseP.logORCDRC.preproc, lambda = seq(0,0.2,0.001), w = seq(1, 2, 0.1)))
 BaseP.logORCDRC.time <- system.time(BaseP.logORCDRC <- sparsereg3D.sel(sparse.reg = BaseP.logORCDRC.preproc ,lambda = seq(0,0.2,0.001)))
 #logORCDRC.p.pred <- sparsereg3D.pred(model.info = logORCDRC.p.sel, chunk.size = 20000, grids = gridmaps.sm2D, depths = c(-0.1,-0.2,-0.3))
 
 
 IntL.logORCDRC.preproc <- pre.sparsereg3D(base.model = log.ORCDRC.fun, use.hier = FALSE, profiles = bor.profs, use.interactions = TRUE, seed = seed, poly.deg = 1, num.folds = 5, num.means = 3, cov.grids = gridmaps.sm2D)    
-IntL.logORCDRC.ncv.time <- system.time(IntL.logORCDRC.ncv <- sparsereg3D.ncv(sparse.reg = IntL.logORCDRC.preproc, lambda = seq(0,0.2,0.001), w = NULL))
+IntL.logORCDRC.ncv.time <- system.time(IntL.logORCDRC.ncv <- sparsereg3D.ncv(sparse.reg = IntL.logORCDRC.preproc, lambda = seq(0,0.2,0.001), w = seq(0, 2, 0.1)))
 IntL.logORCDRC.time <- system.time(IntL.logORCDRC <- sparsereg3D.sel(sparse.reg = IntL.logORCDRC.preproc ,lambda = seq(0,0.2,0.001)))
 #logORCDRC.l.pred <- sparsereg3D.pred(model.info = IntL.logORCDRC, chunk.size = 20000, grids = gridmaps.sm2D, depths = c(-0.1,-0.2,-0.3))
 
 IntP.logORCDRC.preproc <- pre.sparsereg3D(base.model = log.ORCDRC.fun, use.hier = FALSE, profiles = bor.profs, use.interactions = TRUE, seed = seed, poly.deg = 3, num.folds = 5, num.means = 3, cov.grids = gridmaps.sm2D)    
-IntP.logORCDRC.ncv.time <- system.time(IntP.logORCDRC.ncv <- sparsereg3D.ncv(sparse.reg = IntP.logORCDRC.preproc, lambda = seq(0,0.2,0.001), w = NULL))
+IntP.logORCDRC.ncv.time <- system.time(IntP.logORCDRC.ncv <- sparsereg3D.ncv(sparse.reg = IntP.logORCDRC.preproc, lambda = seq(0,0.2,0.001), w = seq(0, 2, 0.1)))
 IntP.logORCDRC.time <- system.time(IntP.logORCDRC <- sparsereg3D.sel(sparse.reg = IntP.logORCDRC.preproc ,lambda = seq(0,0.2,0.001)))
 logORCDRC.l.pred <- sparsereg3D.pred(model.info = IntP.logORCDRC, chunk.size = 20000, grids = gridmaps.sm2D, depths = c(-0.05,-0.15,-0.3))
 
@@ -405,31 +406,8 @@ pH.time <- rbind(BaseL.pH.time, BaseP.pH.time, IntL.pH.time, IntP.pH.time, IntHL
 
 #Number of coefficients
 
-n.coeffs <- function(l.coeffs,p.coeffs){
-  BaseL <- data.frame(l.coeffs[,2])
-  IntL <- l.coeffs[,3:4]
-  IntHL <- l.coeffs[,5:6]
-  BaseP <- data.frame(p.coeffs[,2])
-  IntP <- p.coeffs[,3:6]
-  IntHP <- p.coeffs[,7:10]
-  
-  n.BaseL <-  data.frame(total = prod(dim(BaseL)), selected = sum(BaseL!=0 ), "main effects" = sum(BaseL!=0 ), "interaction effects" = 0 )
-  n.IntL <-   data.frame(total = prod(dim(IntL)),  selected = sum(apply(IntL,2, function(y) sum(y!=0))), "main effects" = apply(IntL,2, function(y) sum(y!=0))[1], "interaction effects" = apply(IntL,2, function(y) sum(y!=0))[2])
-  n.IntHL <-   data.frame(total = prod(dim(IntHL)),  selected = sum(apply(IntHL,2, function(y) sum(y!=0))), "main effects" = apply(IntHL,2, function(y) sum(y!=0))[1], "interaction effects" = apply(IntHL,2, function(y) sum(y!=0))[2])
-  
-  n.BaseP <-  data.frame(total = prod(dim(BaseP)), selected = sum(BaseP!=0 ), "main effects" = sum(BaseP!=0 ), "interaction effects" = 0 )
-  n.IntP <-   data.frame(total = prod(dim(IntP)),  selected = sum(apply(IntP,2, function(y) sum(y!=0))), "main effects" = apply(IntP,2, function(y) sum(y!=0))[1], "interaction effects" = sum(apply(IntP,2, function(y) sum(y!=0))[2:4]))
-  n.IntHP <-   data.frame(total = prod(dim(IntHP)),  selected = sum(apply(IntHP,2, function(y) sum(y!=0))), "main effects" = apply(IntHP,2, function(y) sum(y!=0))[1], "interaction effects" = sum(apply(IntHP,2, function(y) sum(y!=0))[2:4]))
-  
-  
-  total <- data.frame(rbind(n.BaseL,n.BaseP,n.IntL,n.IntP,n.IntHL,n.IntHP))
-  rownames(total) <- NULL
-  total <- cbind(model = c("BaseL","BaseP", "IntL","IntP", "IntHL","IntHP"), total)
-  return(total)
-}
-
 pH.n.coeffs <- n.coeffs(l.coeffs = cmL.pH, p.coeffs = cmP.pH)
-
+logSOC.n.coeffs <- n.coeffs(l.coeffs = cmL.logORCDRC, p.coeffs = cmP.logORCDRC)
 
 save.image(file = "D:/R_projects/Bor_results_final.RData" )
 

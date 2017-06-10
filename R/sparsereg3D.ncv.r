@@ -78,13 +78,13 @@ sparsereg3D.ncv <- function(sparse.reg, lambda, w = NULL){
       }else{
         train.cv.errors <- matrix(NA, nrow = length(w), ncol = length(lambda))
         for(j in 1:length(w)){
-          train.cv.errors[j,] <- cv.glmnet(as.matrix(training.data[,-1]), training.data[,1], alpha = 1,lambda = lambda, foldid = inner.fold.indices, type.measure = "mse", weights = exp(-w[j]*abs(weight.data[,"mid.depth"])))$cvm #
-          #train.cv.errors[j,] <- cv.glmnet(as.matrix(training.data[,-1]), training.data[,1], alpha = 1,lambda = lambda, foldid = inner.fold.indices, type.measure = "mse", weights = 1/(1 + 0*weight.data[,"hdepth"]/100 + (w[j])*abs(weight.data[,"mid.depth"])))$cvm #
+          #train.cv.errors[j,] <- cv.glmnet(as.matrix(training.data[,-1]), training.data[,1], alpha = 1,lambda = lambda, foldid = inner.fold.indices, type.measure = "mse", weights = exp(-w[j]*abs(weight.data[,"mid.depth"])))$cvm #
+          train.cv.errors[j,] <- cv.glmnet(as.matrix(training.data[,-1]), training.data[,1], alpha = 1,lambda = lambda, foldid = inner.fold.indices, type.measure = "mse", weights = 1/(1 + 0*weight.data[,"hdepth"]/100 + (w[j])*abs(weight.data[,"mid.depth"])^2))$cvm #
         }
         min.cv.error <- min(train.cv.errors)
         min.ind <- which(train.cv.errors == min(train.cv.errors), arr.ind=TRUE) # ova funkcija daje kolonu i red minimalne greske
         lambda.min <- sort(lambda, decreasing = TRUE)[min.ind[2]]
-        train.cv <- cv.glmnet(as.matrix(training.data[,-1]), training.data[,1], alpha = 1, lambda = lambda, foldid = inner.fold.indices, type.measure = "mse", weights = 1/(1 + 0*weight.data[,"hdepth"]/100 + (2^w[min.ind[1]])*abs(weight.data[,"mid.depth"])) )
+        train.cv <- cv.glmnet(as.matrix(training.data[,-1]), training.data[,1], alpha = 1, lambda = lambda, foldid = inner.fold.indices, type.measure = "mse", weights = 1/(1 + 0*weight.data[,"hdepth"]/100 + (w[min.ind[1]])*abs(weight.data[,"mid.depth"])) )
         lasso <- train.cv$glmnet.fit # Ovde sam opet koristio cv.glmnet i ako sam trebao samo glmnet, samo iz ocaja...da bude potpuno isto kao i za slucaj bez tezina.
         weight = w[min.ind[1]]
       }
