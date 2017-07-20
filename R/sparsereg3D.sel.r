@@ -12,7 +12,7 @@
 # Standardization parameters
 
 
-sparsereg3D.sel <- function(sparse.reg, lambda){
+sparsereg3D.sel <- function(sparse.reg, lambda = 0, ols = FALSE, step = FALSE){
   
   # Extracting data from sparse.reg object
   seed <- sparse.reg$folds$seed
@@ -39,46 +39,63 @@ sparsereg3D.sel <- function(sparse.reg, lambda){
   }
   
   # Lasso training
-  if(!use.hier){
-    if(use.interactions){
-      training.data <- subset(profiles, select = c(target.name, main.effect.names, depth.int.names)) 
+  if(!ols){
+    if(!use.hier){
+      if(use.interactions){
+        training.data <- subset(profiles, select = c(target.name, main.effect.names, depth.int.names)) 
+      }else{
+        training.data <- subset(profiles, select = c(target.name, main.effect.names)) 
+      }
+      
+      lasso.cv <- cv.glmnet(as.matrix(training.data[,-1]), training.data[,1], alpha = 1,lambda = lambda, foldid = fold.indices, type.measure = "mse")
+      coef.list <- predict(lasso.cv, type="coefficients", s=lasso.cv$lambda.min)
+      prediction <- predict(lasso.cv, newx = as.matrix(training.data[,-1]), type = "response", s=lasso.cv$lambda.min) 
     }else{
-      training.data <- subset(profiles, select = c(target.name, main.effect.names)) 
+      
+      # Hierarchical setting requires the separation of main effects and interaction effects
+      training.main.effects <- as.matrix(profiles[,main.effect.names]) 
+      training.int.effects <- as.matrix(profiles[,all.int.names])
+      training.target <- (profiles[,target.name])
+      
+      
+      hier.path = hierNet.path(training.main.effects,training.target, zz = training.int.effects, diagonal=FALSE, strong=TRUE, trace=0, stand.main = FALSE, stand.int = FALSE) 
+      hier.lasso.cv = hierNet.cv(hier.path, training.main.effects, training.target, folds = obs.fold.list, trace=0) 
+      hier.lasso.final <- hierNet(training.main.effects,training.target, zz = training.int.effects, diagonal=FALSE, strong=TRUE, lam = hier.lasso.cv$lamhat, center = TRUE, stand.main = FALSE, stand.int = FALSE) 
+      prediction <- predict(hier.lasso.final, newx = training.main.effects, zz = training.int.effects)
+      
+      # Extracting the coefficients of final model
+      if(poly.deg == 1){ 
+        int.coeff <- as.matrix(hier.path$th[,,which(hier.lasso.cv$lamhat==hier.path$lamlist)][,length(main.effect.names)]) 
+      } else {
+        int.coeff <- as.matrix(hier.path$th[,,which(hier.lasso.cv$lamhat==hier.path$lamlist)][,(length(main.effect.names)-poly.deg+1):length(main.effect.names)]) 
+      }
+      main.coeff <- hier.path$bp[,which(hier.lasso.cv$lamhat==hier.path$lamlist), drop = F] - hier.path$bn[,which(hier.lasso.cv$lamhat==hier.path$lamlist), drop = F]
+      
+      coef.list <- data.frame(cov.name=colnames(training.main.effects),main.coeff,int.coeff)
     }
-    
-    lasso.cv <- cv.glmnet(as.matrix(training.data[,-1]), training.data[,1], alpha = 1,lambda = lambda, foldid = fold.indices, type.measure = "mse")
-    coef.list <- predict(lasso.cv, type="coefficients", s=lasso.cv$lambda.min)
-    prediction <- predict(lasso.cv, newx = as.matrix(training.data[,-1]), type = "response", s=lasso.cv$lambda.min) 
   }else{
-    
-    # Hierarchical setting requires the separation of main effects and interaction effects
-    training.main.effects <- as.matrix(profiles[,main.effect.names]) 
-    training.int.effects <- as.matrix(profiles[,all.int.names])
-    training.target <- (profiles[,target.name])
-    
-    
-    hier.path = hierNet.path(training.main.effects,training.target, zz = training.int.effects, diagonal=FALSE, strong=TRUE, trace=0, stand.main = FALSE, stand.int = FALSE) 
-    hier.lasso.cv = hierNet.cv(hier.path, training.main.effects, training.target, folds = obs.fold.list, trace=0) 
-    hier.lasso.final <- hierNet(training.main.effects,training.target, zz = training.int.effects, diagonal=FALSE, strong=TRUE, lam = hier.lasso.cv$lamhat, center = TRUE, stand.main = FALSE, stand.int = FALSE) 
-    prediction <- predict(hier.lasso.final, newx = training.main.effects, zz = training.int.effects)
-    
-    # Extracting the coefficients of final model
-    if(poly.deg == 1){ 
-      int.coeff <- as.matrix(hier.path$th[,,which(hier.lasso.cv$lamhat==hier.path$lamlist)][,length(main.effect.names)]) 
-    } else {
-      int.coeff <- as.matrix(hier.path$th[,,which(hier.lasso.cv$lamhat==hier.path$lamlist)][,(length(main.effect.names)-poly.deg+1):length(main.effect.names)]) 
+    if(!step){
+      ols.model <- lm(formula = as.formula(paste(target.name,"~", paste(names(profiles[, c(main.effect.names, depth.int.names)]), collapse="+"))), data = profiles[,c(target.name, main.effect.names, depth.int.names)])
+    }else{
+      ols.model <- stepAIC(lm(formula = as.formula(paste(target.name,"~", paste(names(profiles[, c(main.effect.names, depth.int.names)]), collapse="+"))), data = profiles[,c(target.name, main.effect.names, depth.int.names)]))
     }
-    main.coeff <- hier.path$bp[,which(hier.lasso.cv$lamhat==hier.path$lamlist), drop = F] - hier.path$bn[,which(hier.lasso.cv$lamhat==hier.path$lamlist), drop = F]
     
-    coef.list <- data.frame(cov.name=colnames(training.main.effects),main.coeff,int.coeff)
+    # Inner crossvalidation loop with model selection
+    coef.list <- coefficients(ols.model)
+    prediction <-  predict(ols.model, newdata = profiles[,c(main.effect.names, depth.int.names)])
+    model.info <- list(data = data.frame(profiles, prediction = prediction), model = ols.model, coefficients = coef.list)
   }
+
   
   # Regression summary list containing the final model, final lambda, model coefficients, and standardization parameters
-  if(!use.hier){
-    model.info <- list(data = data.frame(profiles, prediction = prediction), model = list(model = lasso.cv, lambda = lasso.cv$lambda.min, target.name = target.name, main.effect.names = main.effect.names, depth.int.names = depth.int.names, use.interactions = use.interactions, use.hier = use.hier, poly.deg = poly.deg, base.model = base.model), coefficients = coef.list, std.par = std.par)
-  }else{
-    model.info <- list(data = data.frame(profiles, prediction = prediction), model = list(model = hier.lasso.final, lambda = hier.path$lamlist[which(hier.lasso.cv$lamhat == hier.path$lamlist)], target.name = target.name, main.effect.names = main.effect.names, depth.int.names = depth.int.names, use.interactions = use.interactions, use.hier = use.hier, poly.deg = poly.deg, base.model = base.model), coefficients = coef.list, std.par = std.par)
+  if(!ols){
+    if(!use.hier){
+      model.info <- list(data = data.frame(profiles, prediction = prediction), model = list(model = lasso.cv, lambda = lasso.cv$lambda.min, target.name = target.name, main.effect.names = main.effect.names, depth.int.names = depth.int.names, use.interactions = use.interactions, use.hier = use.hier, poly.deg = poly.deg, base.model = base.model), coefficients = coef.list, std.par = std.par)
+    }else{
+      model.info <- list(data = data.frame(profiles, prediction = prediction), model = list(model = hier.lasso.final, lambda = hier.path$lamlist[which(hier.lasso.cv$lamhat == hier.path$lamlist)], target.name = target.name, main.effect.names = main.effect.names, depth.int.names = depth.int.names, use.interactions = use.interactions, use.hier = use.hier, poly.deg = poly.deg, base.model = base.model), coefficients = coef.list, std.par = std.par)
+    }
   }
+
   
   return(model.info)
 }

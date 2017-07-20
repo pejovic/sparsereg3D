@@ -123,6 +123,41 @@ plot(Figure2) # Make plot
 dev.off()
 #=================================================================== 
 
+#============ Aggregating rasters for easier prediction ============
+
+bor.rasters <- stack(gridmaps.sm2D)
+# Categorical grids
+stack.cat.grids <- stack(gridmaps.sm2D[c("SoilType", "clc")])
+# Continual grids
+stack.con.grids <- stack(gridmaps.sm2D[c(names(gridmaps.sm2D)[-(which(names(gridmaps.sm2D) %in% c("SoilType","clc")))])])
+
+stack.con.grids40 <- aggregate(stack.con.grids, fact = 2)
+
+stack.con.grids <- resample(stack.con.grids, stack.con.grids40, method = "bilinear")
+stack.cat.grids <- resample(stack.cat.grids, stack.con.grids40, method = "ngb")
+
+grids40 <- stack(stack.con.grids, stack.cat.grids)
+gridmaps40 <- as(grids40, "SpatialPixelsDataFrame")
+
+factors <- c("SoilType", "clc")
+f <- colwise(as.factor, .cols = factors)
+gridmaps40@data[,factors] <- f(gridmaps40@data[,factors])
+#Drenthe@data[,factors] <- f(Drenthe@data[,factors])
+gridmaps40@data[,factors] <- f(gridmaps40@data[,factors])
+
+
+stack.con.grids80 <- aggregate(stack.con.grids40, fact = 2)
+
+
+
+grids250 <- stack(stack.con.grids, stack.cat.grids, stack.con.grids250, stack.modis)
+grids1000 <- stack(stack.con.grids1000, stack.con.grids1000a, stack.cat.grids1000, stack.modis.1000)
+
+names(grids250)
+
+
+#==================================================================
+
 
 
 #formula
@@ -253,23 +288,63 @@ source(paste(fun.path,"pre.sparsereg3D.r",sep="/"))
 # logORC results
 BaseL.logORC.preproc <- pre.sparsereg3D(base.model = formulaString, use.hier = FALSE, profiles = edgeroi.spc, use.interactions = FALSE, poly.deg = 1, num.folds = 5, num.means = 3, cov.grids = cov.maps, seed = seed)#, kmean.vars = all.vars(formulaString), cum.prop = 0.90)     # , kmean.vars = all.vars(formulaString), cum.prop = 0.90
 BaseL.logORC.ncv.time <- system.time(BaseL.logORC.ncv <- sparsereg3D.ncv(sparse.reg = BaseL.logORC.preproc, lambda = seq(0,0.2,0.001))) #w = seq(0, 1, 0.1)
-BaseL.logORC.time <- system.time(BaseL.logORC <- sparsereg3D.sel(sparse.reg = BaseL.logORC.preproc ,lambda = seq(0,0.2,0.001)))
+BaseL.logORC.time <- system.time(BaseL.logORC <- sparsereg3D.sel(sparse.reg = BaseL.logORC.preproc , lambda = seq(0,0,0), step = TRUE))
 #logORC.l.pred <- sparsereg3D.pred(model.info = BaseL.logORC, chunk.size = 20000, grids = cov.maps, depths = c(-0.1,-0.2,-0.3))
 
 BaseP.logORC.preproc <- pre.sparsereg3D(base.model = formulaString, use.hier = FALSE, profiles = edgeroi.spc, use.interactions = FALSE, poly.deg = 3, num.folds = 5, num.means = 3, cov.grids = cov.maps, seed = seed)#, kmean.vars = all.vars(formulaString), cum.prop = 0.90)    
 BaseP.logORC.ncv.time <- system.time(BaseP.logORC.ncv <- sparsereg3D.ncv(sparse.reg = BaseP.logORC.preproc, lambda = seq(0,0.2,0.001)))
-BaseP.logORC.time <- system.time(BaseP.logORC <- sparsereg3D.sel(sparse.reg = BaseP.logORC.preproc ,lambda = seq(0,2,0.1)))
+BaseP.logORC.time <- system.time(BaseP.logORC <- sparsereg3D.sel(sparse.reg = BaseP.logORC.preproc, lambda = seq(0,0,0), step = TRUE))
 #logORC.p.pred <- sparsereg3D.pred(model.info = logORC.p.sel, chunk.size = 20000, grids = cov.maps, depths = c(-0.1,-0.2,-0.3))
 
 IntL.logORC.preproc <- pre.sparsereg3D(base.model = formulaString, use.hier = FALSE, profiles = edgeroi.spc, use.interactions = TRUE, poly.deg = 1, num.folds = 5, num.means = 3, cov.grids = cov.maps, seed = seed)#, kmean.vars = all.vars(formulaString), cum.prop = 0.90)    
 IntL.logORC.ncv.time <- system.time(IntL.logORC.ncv <- sparsereg3D.ncv(sparse.reg = IntL.logORC.preproc, lambda = seq(0,0.2,0.001), w = seq(0, 1, 0.1)))
-IntL.logORC.time <- system.time(IntL.logORC <- sparsereg3D.sel(sparse.reg = IntL.logORC.preproc ,lambda = seq(0,0.2,0.001))) 
+IntL.logORC.time <- system.time(IntL.logORC <- sparsereg3D.sel(sparse.reg = IntL.logORC.preproc, lambda = seq(0,0,0), step = TRUE)) 
 #logORC.l.pred <- sparsereg3D.pred(model.info = IntL.logORC, chunk.size = 20000, grids = cov.maps, depths = c(-0.1,-0.2,-0.3))
 
 IntP.logORC.preproc <- pre.sparsereg3D(base.model = formulaString, use.hier = FALSE, profiles = edgeroi.spc, use.interactions = TRUE, poly.deg = 3, num.folds = 5, num.means = 3, cov.grids = cov.maps, seed = seed)#, kmean.vars = all.vars(formulaString), cum.prop = 0.90)    
-IntP.logORC.ncv.time <- system.time(IntP.logORC.ncv <- sparsereg3D.ncv(sparse.reg = IntP.logORC.preproc, lambda = seq(0,0.2,0.001), w = seq(0, 5, 0.2)))
-IntP.logORC.time <- system.time(IntP.logORC <- sparsereg3D.sel(sparse.reg = IntP.logORC.preproc ,lambda = seq(0,0.2,0.001)))
-#logORC.l.pred <- sparsereg3D.pred(model.info = IntP.logORC, chunk.size = 20000, grids = cov.maps, depths = c(-0.05, -0.15, -0.3))
+IntP.logORC.ncv.time <- system.time(IntP.logORC.ncv <- sparsereg3D.ncv(sparse.reg = IntP.logORC.preproc, lambda = seq(0,0.01,0.0001))) #, w = seq(0, 5, 0.2)
+IntP.logORC.time <- system.time(IntP.logORC <- sparsereg3D.sel(sparse.reg = IntP.logORC.preproc, lambda = 0, step = TRUE))
+logORC.l.pred <- sparsereg3D.pred(model.info = IntP.logORC, chunk.size = 10000, grids = cov.maps, depths = c(-0.05, -0.15, -0.3))
+
+
+num.coef <- function(models){
+  "%ni%" <- Negate("%in%")
+  for(i in 1:length(models)){
+    name.coef <- names(models[[i]]$coefficients[-1])
+    split.names <- strsplit(name.coef, ":")
+    coef.list <- lapply(split.names, function(x) length(x))
+    non.zero.effects <- length(coef.list)
+    main.effects <- (which(coef.list == 1))
+    main.vars <- name.coef[main.effects]
+    
+    if(length(grep("depth", main.vars)) > 1){
+      main.vars <- main.vars[1:(length(main.vars)-(length(grep("depth", main.vars))-1))]
+    }
+    num.vars <- length(main.vars)
+    num.main.effects <- length(main.effects)
+    if(num.main.effects == non.zero.effects){
+      interaction.effects <- 0
+      num.int.effects <- 0
+    }else{
+      interaction.effects <- (which(coef.list == 2))
+      num.int.effects <- length(interaction.effects)
+      int.vars <- unique(do.call(rbind, split.names[interaction.effects])[,1])  
+      if(length(which(int.vars %in% name.coef[main.effects])) != length(int.vars)){
+        int.vars <- length(which(int.vars %ni% name.coef[main.effects]))
+        num.vars <- length(main.vars) + int.vars
+      }
+      
+    }
+    models[[i]] <- data.frame(non.zero = non.zero.effects, env.vars = num.vars, main.effects = num.main.effects, int.effecs = num.int.effects)
+  }
+  out <- do.call(rbind, models)
+  return(out)
+}
+
+
+models <- list(BaseL.logORC, BaseP.logORC, IntL.logORC, IntP.logORC)
+num.coef(models)
+
 
 logORC.l.pred[[1]]$pred <- expm1(logORC.l.pred[[1]]$pred)
 logORC.l.pred[[2]]$pred <- expm1(logORC.l.pred[[2]]$pred)
@@ -447,4 +522,62 @@ save.image(file = "D:/R_projects/edgeroi_logORC_pH.RData")
 
 load("D:/R_projects/edgeroi_logORC_pH.RData")
 
+#=========================== Spatial Prediction Maps ==========================================================================================
+
+Edgeroi.spdf <- slice(edgeroi.spc, 5 ~ log1pORC )
+Edgeroi.sp <- as(Edgeroi.spdf, "SpatialPoints")
+
+proj4string(Edgeroi.sp) <- proj4string(logORC.pred)
+
+logORC.pred <- logORC.l.pred[[1]]
+logORC.pred@coords <- logORC.pred@coords[,1:2]
+logORC.pred$pred <- (logORC.l.pred[[1]]$pred)
+logORC.pred@data <- plyr::rename(logORC.pred@data, replace = c("pred" = "prediction_0.05"))
+logORC.pred@data$prediction_0.15 <- (logORC.l.pred[[2]]$pred)
+logORC.pred@data$prediction_0.30 <- (logORC.l.pred[[3]]$pred)
+
+zmax <- max(logORC.pred$prediction_0.05, logORC.pred$prediction_0.15, logORC.pred$prediction_0.30)
+zmin <- min(logORC.pred$prediction_0.05, logORC.pred$prediction_0.15, logORC.pred$prediction_0.30)
+zmax <- round(zmax) 
+zmin <- round(zmin) 
+
+ramp <- seq(from = zmin, to = zmax, by = 0.1)
+color.SOM <- colorRampPalette(c("blue", "light green", "orange" , "red"))
+
+ckey <- list(labels=list(cex=2))
+
+p4 <- spplot(logORC.pred,  asp = 1, at = ramp, col.regions = color.SOM, colorkey=ckey, names.attr = c("5cm", "15cm", "30cm"))
+
+p1 <- spplot(logORC.pred, "prediction_0.05", asp = 1, at = ramp, col.regions = color.SOM, colorkey=FALSE, par.settings = list(axis.line = list(col = 'transparent')))
+p2 <- spplot(logORC.pred, "prediction_0.15", asp = 1, at = ramp,  col.regions = color.SOM, colorkey=FALSE, par.settings = list(axis.line = list(col = 'transparent')))
+p3 <- spplot(logORC.pred, "prediction_0.30", asp = 1, at = ramp, col.regions = color.SOM, colorkey=ckey, par.settings = list(axis.line = list(col = 'transparent'))) # last plot contains the legend
+
+writeGDAL(cov.maps[,"DEMSRT5"], fname = paste(getwd(), "Edgeroi_dem.tif", sep = "/"), drivername = "GTiff")
+writeOGR(Edgeroi.spdf, dsn = paste(getwd()), layer = "Edgeroi_spc.shp", driver = "ESRI Shapefile")
+
+pts = list("sp.points", bor.sp, pch = 3, col = "black", alpha = .7)
+
+p22 <- spplot(gridmaps40, "Dist", asp = 1, at = ramp, col.regions = color.SOM, colorkey=FALSE, sp.layout = list(pts))
+
+
+pdf("Edgeroi_logSOC_5.pdf",width = 6, height = 4)
+p1
+dev.off()
+
+pdf("Edgeroi_logSOC_15.pdf", width = 6,height = 4)
+p2
+dev.off()
+
+
+pdf("Edgeroi_logSOC_30.pdf", width = 7,height = 4)
+p3
+dev.off()
+
+
+pdf("BOR_logSOC_all.pdf", width = 20,height = 12)
+p4
+dev.off()
+
+
+#==============================================================================================================================================
 

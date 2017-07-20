@@ -14,7 +14,7 @@
 #sparse.reg = pre.som
 #lambda = seq(0,5,0.1)
 
-sparsereg3D.ncv <- function(sparse.reg, lambda, w = NULL){
+sparsereg3D.ncv <- function(sparse.reg, lambda, w = NULL, step = FALSE){
   
   # Extracting data from sparse.reg object
   seed <- sparse.reg$folds$seed
@@ -70,45 +70,59 @@ sparsereg3D.ncv <- function(sparse.reg, lambda, w = NULL){
       for(j in 1:length(inner.obs.fold.list)){
         inner.fold.indices[inner.obs.fold.list[[j]]] <- j
       }
-## MLADEN      
-      if(is.null(w)){
+  if(!step){
+    if(is.null(w)){
+      grid <- expand.grid(1:num.folds, lambda)
+      train.pred.df <- do.call(rbind,(apply(grid, 1, function(x) data.frame(obs = as.numeric(training.data[which(inner.fold.indices == x[1]), 1]), pred = as.numeric(predict(glmnet(as.matrix(training.data[-which(inner.fold.indices == x[1]), -1]), training.data[-which(inner.fold.indices == x[1]), 1], alpha = 1, lambda = x[2], weights = 1/(1 + 0*weight.data[-which(inner.fold.indices == x[1]),"hdepth"]/100 + 0*abs(weight.data[-which(inner.fold.indices == x[1]),"mid.depth"]))), newx = as.matrix(training.data[which(inner.fold.indices == x[1]), -1]), s = x[2]))))))
+      train.pred.df <- cbind(train.pred.df, lambda = (c(rep(lambda, each = length(inner.fold.indices)))))
+      train.pred.df$pred <- pmax(train.pred.df$pred, target.min/3)
+      lambda.rmse <- ddply(train.pred.df, .(lambda), function(x) cv.error = RMSE(x$pred, x$obs))
+      min.cv.error <- min(lambda.rmse[,2])
+      lambda.min <- lambda.rmse[which(lambda.rmse[,2] == min.cv.error),"lambda"]
+      lasso <- glmnet(as.matrix(training.data[, -1]), training.data[, 1], alpha = 1, lambda = lambda.min, weights = 1/(1 + 0*weight.data[,"hdepth"]/100 + 0*abs(weight.data[,"mid.depth"])))
+      weight = NA
+    }else{
+      train.cv.errors <- matrix(NA, nrow = length(w), ncol = length(lambda))
+      for(j in 1:length(w)){
         grid <- expand.grid(1:num.folds, lambda)
-        train.pred.df <- do.call(rbind,(apply(grid, 1, function(x) data.frame(obs = as.numeric(training.data[which(inner.fold.indices == x[1]), 1]), pred = as.numeric(predict(glmnet(as.matrix(training.data[-which(inner.fold.indices == x[1]), -1]), training.data[-which(inner.fold.indices == x[1]), 1], alpha = 1, lambda = x[2], weights = 1/(1 + 0*weight.data[-which(inner.fold.indices == x[1]),"hdepth"]/100 + 0*abs(weight.data[-which(inner.fold.indices == x[1]),"mid.depth"]))), newx = as.matrix(training.data[which(inner.fold.indices == x[1]), -1]), s = x[2]))))))
+        train.pred.df <- do.call(rbind,(apply(grid, 1, function(x) data.frame(obs = as.numeric(training.data[which(inner.fold.indices == x[1]), 1]), pred = as.numeric(predict(glmnet(as.matrix(training.data[-which(inner.fold.indices == x[1]), -1]), training.data[-which(inner.fold.indices == x[1]), 1], alpha = 1, lambda = x[2], weights = 1/(1 + 0*weight.data[-which(inner.fold.indices == x[1]),"hdepth"]/100 + w[j]*abs(weight.data[-which(inner.fold.indices == x[1]),"mid.depth"]))), newx = as.matrix(training.data[which(inner.fold.indices == x[1]), -1]), s = x[2]))))))
         train.pred.df <- cbind(train.pred.df, lambda = (c(rep(lambda, each = length(inner.fold.indices)))))
         train.pred.df$pred <- pmax(train.pred.df$pred, target.min/3)
         lambda.rmse <- ddply(train.pred.df, .(lambda), function(x) cv.error = RMSE(x$pred, x$obs))
-        min.cv.error <- min(lambda.rmse[,2])
-        lambda.min <- lambda.rmse[which(lambda.rmse[,2] == min.cv.error),"lambda"]
-        lasso <- glmnet(as.matrix(training.data[, -1]), training.data[, 1], alpha = 1, lambda = lambda.min, weights = 1/(1 + 0*weight.data[,"hdepth"]/100 + 0*abs(weight.data[,"mid.depth"])))
-        weight = NA
-      }else{
-        train.cv.errors <- matrix(NA, nrow = length(w), ncol = length(lambda))
-        for(j in 1:length(w)){
-          grid <- expand.grid(1:num.folds, lambda)
-          train.pred.df <- do.call(rbind,(apply(grid, 1, function(x) data.frame(obs = as.numeric(training.data[which(inner.fold.indices == x[1]), 1]), pred = as.numeric(predict(glmnet(as.matrix(training.data[-which(inner.fold.indices == x[1]), -1]), training.data[-which(inner.fold.indices == x[1]), 1], alpha = 1, lambda = x[2], weights = 1/(1 + 0*weight.data[-which(inner.fold.indices == x[1]),"hdepth"]/100 + w[j]*abs(weight.data[-which(inner.fold.indices == x[1]),"mid.depth"]))), newx = as.matrix(training.data[which(inner.fold.indices == x[1]), -1]), s = x[2]))))))
-          train.pred.df <- cbind(train.pred.df, lambda = (c(rep(lambda, each = length(inner.fold.indices)))))
-          train.pred.df$pred <- pmax(train.pred.df$pred, target.min/3)
-          lambda.rmse <- ddply(train.pred.df, .(lambda), function(x) cv.error = RMSE(x$pred, x$obs))
-          train.cv.errors[j,] <- lambda.rmse[,2]
-          }
-        min.cv.error <- min(train.cv.errors)
-        min.ind <- which(train.cv.errors == min(train.cv.errors), arr.ind=TRUE) # ova funkcija daje kolonu i red minimalne greske
-        lambda.min <- sort(lambda, decreasing = FALSE)[min.ind[1,2]]
-        lasso <- glmnet(as.matrix(training.data[, -1]), training.data[, 1], alpha = 1, lambda = lambda.min, weights = 1/(1 + 0*weight.data[,"hdepth"]/100 + w[min.ind[1,1]]*abs(weight.data[,"mid.depth"])))
-        weight = w[min.ind[1,1]]
+        train.cv.errors[j,] <- lambda.rmse[,2]
       }
-## MLADEN      
-      
-      # Inner crossvalidation loop with model selection
-      coef.list <- coef(lasso, s = lambda.min)
-      models.ncv[[i]] <- as.list(c(coefficients = coef.list, lambda = lambda.min, weight = weight))
-      # Prediction on test set
-      test.pred <- predict(lasso, s = lambda.min, newx = as.matrix(test.data[,-1]))
-      test.pred <- pmax(test.pred, target.min/3)
-      
-      training.pred <- predict(lasso, s = lambda.min, newx = as.matrix(training.data[,-1]))
-      training.pred <- pmax(training.pred, target.min/3)
-      
+      min.cv.error <- min(train.cv.errors)
+      min.ind <- which(train.cv.errors == min(train.cv.errors), arr.ind=TRUE) # ova funkcija daje kolonu i red minimalne greske
+      lambda.min <- sort(lambda, decreasing = FALSE)[min.ind[1,2]]
+      lasso <- glmnet(as.matrix(training.data[, -1]), training.data[, 1], alpha = 1, lambda = lambda.min, weights = 1/(1 + 0*weight.data[,"hdepth"]/100 + w[min.ind[1,1]]*abs(weight.data[,"mid.depth"])))
+      weight = w[min.ind[1,1]]
+    }
+
+    # Inner crossvalidation loop with model selection
+    coef.list <- coef(lasso, s = lambda.min)
+    models.ncv[[i]] <- as.list(c(coefficients = coef.list, lambda = lambda.min, weight = weight))
+    # Prediction on test set
+    test.pred <- predict(lasso, s = lambda.min, newx = as.matrix(test.data[,-1]))
+    test.pred <- pmax(test.pred, target.min/3)
+    
+    training.pred <- predict(lasso, s = lambda.min, newx = as.matrix(training.data[,-1]))
+    training.pred <- pmax(training.pred, target.min/3)
+    
+  }else{
+    step.model <- stepAIC(lm(formula = as.formula(paste(target.name,"~", paste(names(training.data[, -1]), collapse="+"))), data = training.data))  
+    
+    # Inner crossvalidation loop with model selection
+    coef.list <- coefficients(step.model)
+    models.ncv[[i]] <- as.list(coef.list)
+    # Prediction on test set
+    test.pred <- predict(step.model, newdata = test.data[,-1])
+    test.pred <- pmax(test.pred, target.min/3)
+    
+    training.pred <- predict(step.model, newdata = training.data[,-1])
+    training.pred <- pmax(training.pred, target.min/3)
+    min.cv.error <- NA
+    }      
+            
     }else{
       # Hierarchical setting requires the separation of main effects and interaction effects
       training.main.effects <- as.matrix(training.data[,main.effect.names]) 
