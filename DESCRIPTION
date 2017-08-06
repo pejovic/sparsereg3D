@@ -1,10 +1,10 @@
 Package: sparsereg3D
-Title: What the Package Does (one line, title case)
+Title: An implementation of lasso regression for 3D soil mapping. 
 Version: 0.0.0.9000
-Authors@R: person("First", "Last", email = "first.last@example.com", role = c("aut", "cre"))
-Description: What the package does (one paragraph).
+Authors@R: person("Milutin", "Pejovic", email = "milutinpejovic@gmail.com", role = c("aut", "cre"))
+Description: Package for fitting 3D sparse interaction regression models of soil properties, evaluating models and making predictions over the gridded area at different depths.
 Depends: R (>= 3.4.1)
-License: What license is it under?
+License: GPL-2
 Encoding: UTF-8
 LazyData: true
 Imports: rgdal,
@@ -20,3 +20,4 @@ Imports: rgdal,
     doParallel,
     foreach,
     gstat
+RoxygenNote: 6.0.1
