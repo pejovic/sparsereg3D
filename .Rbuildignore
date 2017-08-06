@@ -1,2 +1,3 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
+^sparsereg3D\.ncv_modified\.r$

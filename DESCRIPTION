@@ -1,5 +1,5 @@
 Package: sparsereg3D
-Title: An implementation of lasso regression for 3D soil mapping. 
+Title: An Implementation of Lasso Regression for 3D Soil Mapping. 
 Version: 0.0.0.9000
 Authors@R: person("Milutin", "Pejovic", email = "milutinpejovic@gmail.com", role = c("aut", "cre"))
 Description: Package for fitting 3D sparse interaction regression models of soil properties, evaluating models and making predictions over the gridded area at different depths.

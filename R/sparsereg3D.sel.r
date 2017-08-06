@@ -12,14 +12,14 @@
 # Standardization parameters
 
 
-#' Model Selection
+#' Model Selection based on Cross-Validation
 #'
 #' @export
 #'
 #' @param sparse.reg output from \code{pre.sparsereg3D} function
 #' @param lambda vector of regularization parameter values for lasso regression
-#' @param ols should model be fitted with Ordinary Least Squares (binary)
-#' @param step should stepwise procedure be used when fitting OLS model
+#' @param ols logical. If TRUE model will be fitted with OLS insted of using lasso
+#' @param step logical. If TRUE stepwise procedure will be used when fitting OLS model
 #' @param seed random number generator
 #'
 #'

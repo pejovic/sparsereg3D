@@ -7,9 +7,9 @@
 # poly.deg         - degree of polynomial depth function
 # num.folds        - number of folds in crossvalidation
 # num.means        - number of clusters in k-means clustering
-# use.interactions - should interactions be included in the model (binary)
-# standardize      - should standardization be performed (binary)
-# use.hier         - should hierarchy constraints be enforced (binary)
+# use.interactions - logical. If TRUE interactions will be included in the model.
+# standardize      - logical. If TRUE standardization will be performed.
+# use.hier         - logical. If TRUE hierarchy constraints will be enforced.
 #
 # Return value:
 # base.model        - model description extended by polynomial terms if poly.deg is TRUE
@@ -30,16 +30,16 @@
 #' @param poly.deg degree of polynomial depth function
 #' @param num.folds number of folds in crossvalidation
 #' @param num.means number of clusters in k-means clustering
-#' @param use.interactions should interactions be included in the model (binary)
-#' @param standardize should standardization be performed (binary)
-#' @param use.hier should hierarchy constraints be enforced (binary)
+#' @param use.interactions logical. If TRUE interactions will be included in the model.
+#' @param standardize logical. If TRUE standardization will be performed.
+#' @param use.hier logical. If TRUE hierarchy constraints will be enforced.
 #'
 #' @return List of objects including:
 #' \itemize{
 #'  \item \code{base.model}:  model description extended by polynomial terms if poly.deg is TRUE
 #'  \item \code{poly.deg}:   degree of polynomial depth function
-#'  \item \code{use.interactions}:  should interactions be used in the model (binary)
-#'  \item \code{use.hier}:   should hierarachy constraints be enforced (binary)
+#'  \item \code{use.interactions}:  logical. If interactions are included in the model.
+#'  \item \code{use.hier}:   logical. If hierarchy constraints  are enforced.
 #'  \item \code{main.effect.names}:  names of main effect covariates
 #'  \item \code{depth.int.names}:   names of interactions with depth (e.g. slope.depth)
 #'  \item \code{all.int.names}:  names of all interactions (not only including depth)

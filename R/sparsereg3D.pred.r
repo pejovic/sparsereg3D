@@ -9,6 +9,21 @@
 # Return value:
 # grids with predicted values
 
+#' Spatial prediction at multiple soil depths.
+#'
+#' @export
+#'
+#' @param model.info output from \code{sparsereg3D.sel} function
+#' @param depths depths at which prediction is performed
+#' @param grids SpatialPixelsDataframe containing grids of covariates
+#' @param chunk.size number of pixels in each chunk obtained by splitting grids in order to do parlallel processing
+#'
+#'
+#' @return List of prediction grids
+#'
+#'  @keywords Spatial prediction
+
+
 
 sparsereg3D.pred <- function(model.info, depths, grids, chunk.size) {
 

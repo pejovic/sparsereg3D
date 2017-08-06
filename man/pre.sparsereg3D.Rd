@@ -16,7 +16,7 @@ pre.sparsereg3D(base.model, profiles, cov.grids, use.hier = FALSE,
 
 \item{cov.grids}{covariates (class SpatialPixelsDataFrame)}
 
-\item{use.hier}{should hierarchy constraints be enforced (binary)}
+\item{use.hier}{logical. If TRUE hierarchy constraints will be enforced.}
 
 \item{poly.deg}{degree of polynomial depth function}
 
@@ -24,17 +24,17 @@ pre.sparsereg3D(base.model, profiles, cov.grids, use.hier = FALSE,
 
 \item{num.means}{number of clusters in k-means clustering}
 
-\item{use.interactions}{should interactions be included in the model (binary)}
+\item{use.interactions}{logical. If TRUE interactions will be included in the model.}
 
-\item{standardize}{should standardization be performed (binary)}
+\item{standardize}{logical. If TRUE standardization will be performed.}
 }
 \value{
 List of objects including:
 \itemize{
  \item \code{base.model}:  model description extended by polynomial terms if poly.deg is TRUE
  \item \code{poly.deg}:   degree of polynomial depth function
- \item \code{use.interactions}:  should interactions be used in the model (binary)
- \item \code{use.hier}:   should hierarachy constraints be enforced (binary)
+ \item \code{use.interactions}:  logical. If interactions are included in the model.
+ \item \code{use.hier}:   logical. If hierarchy constraints  are enforced.
  \item \code{main.effect.names}:  names of main effect covariates
  \item \code{depth.int.names}:   names of interactions with depth (e.g. slope.depth)
  \item \code{all.int.names}:  names of all interactions (not only including depth)
