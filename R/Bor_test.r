@@ -44,16 +44,16 @@ n.coeffs <- function(l.coeffs,p.coeffs){
   BaseP <- data.frame(p.coeffs[,2])
   IntP <- p.coeffs[,3:6]
   IntHP <- p.coeffs[,7:10]
-  
+
   n.BaseL <-  data.frame(total = prod(dim(BaseL)), selected = sum(BaseL!=0 ), "Number of Variables" = sum(apply(BaseL,1, function(y) sum(abs(y)))!=0), "main effects" = sum(BaseL!=0 ), "interaction effects" = 0 )
   n.IntL <-   data.frame(total = prod(dim(IntL)),  selected = sum(apply(IntL,2, function(y) sum(abs(y)!=0))), "Number of Variables" = sum(apply(IntL,1, function(y) sum(abs(y)))!=0) ,"main effects" = apply(IntL,2, function(y) sum(abs(y)!=0))[1], "interaction effects" = apply(IntL,2, function(y) sum(abs(y)!=0))[2])
   n.IntHL <-   data.frame(total = prod(dim(IntHL)),  selected = sum(apply(IntHL,2, function(y) sum(abs(y)!=0))), "Number of Variables" = sum(apply(IntHL,1, function(y) sum(abs(y)))!=0), "main effects" = apply(IntHL,2, function(y) sum(abs(y)!=0))[1], "interaction effects" = apply(IntHL,2, function(y) sum(abs(y)!=0))[2])
-  
+
   n.BaseP <-  data.frame(total = prod(dim(BaseP)), selected = sum(BaseP!=0 ), "Number of Variables" = sum(apply(BaseP,1, function(y) sum(abs(y)))[1:(dim(BaseP)[1]-2)]!=0), "main effects" = sum(BaseP!=0 ), "interaction effects" = 0 )
   n.IntP <-   data.frame(total = prod(dim(IntP)),  selected = sum(apply(IntP,2, function(y) sum(abs(y)!=0))), "Number of Variables" = sum(apply(IntP[-c(dim(IntP)[1]:(dim(IntP)[1]-1)),], 1, function(y) sum(y))[1:(dim(BaseP)[1]-2)]!=0), "main effects" = apply(IntP,2, function(y) sum(abs(y)!=0))[1], "interaction effects" = sum(apply(IntP,2, function(y) sum(abs(y)!=0))[2:4]))
   n.IntHP <-   data.frame(total = prod(dim(IntHP)),  selected = sum(apply(IntHP,2, function(y) sum(abs(y)!=0))), "Number of Variables" = sum(apply(IntHP[-c(dim(IntHP)[1]:(dim(IntHP)[1]-1)),], 1, function(y) sum(abs(y)))[1:(dim(BaseP)[1]-2)]!=0), "main effects" = apply(IntHP,2, function(y) sum(abs(y)!=0))[1], "interaction effects" = sum(apply(IntHP,2, function(y) sum(abs(y)!=0))[2:4]))
-  
-  
+
+
   total <- data.frame(rbind(n.BaseL,n.BaseP,n.IntL,n.IntP,n.IntHL,n.IntHP))
   rownames(total) <- NULL
   total <- cbind(model = c("BaseL","BaseP", "IntL", "IntP","IntHL","IntHP"), total)
@@ -133,7 +133,7 @@ Figure2 <- xyplot(top ~ p.q50 | variable, data=agg, ylab='Depth',
                   alpha=0.25, sync.colors=TRUE,
                   par.settings=list(superpose.line=list(col='RoyalBlue', lwd=2)),
                   prepanel=prepanel.depth_function,
-#                  cf=agg$contributing_fraction, cf.col='black', cf.interval=5, 
+#                  cf=agg$contributing_fraction, cf.col='black', cf.interval=5,
                   layout=c(1,1), strip=strip.custom(bg=grey(0.8)),
                   scales=list(x=list(tick.number=4, alternating=3, relation='free'))
 )
@@ -206,13 +206,13 @@ BaseL.logORCDRC.ncv.time <- system.time(BaseL.logORCDRC.ncv <- sparsereg3D.ncv(s
 BaseL.logORCDRC.time <- system.time(BaseL.logORCDRC <- sparsereg3D.sel(sparse.reg = BaseL.logORCDRC.preproc ,lambda = seq(0,0,0), step = TRUE))
 #logORCDRC.l.pred <- sparsereg3D.pred(model.info = BaseL.logORCDRC, chunk.size = 20000, grids = gridmaps.sm2D, depths = c(-0.1,-0.2,-0.3))
 
-BaseP.logORCDRC.preproc <- pre.sparsereg3D(base.model = log.ORCDRC.fun, use.hier = FALSE, profiles = bor.profs, use.interactions = FALSE, seed = seed, poly.deg = 3, num.folds = 5, num.means = 3, cov.grids = gridmaps.sm2D)  
+BaseP.logORCDRC.preproc <- pre.sparsereg3D(base.model = log.ORCDRC.fun, use.hier = FALSE, profiles = bor.profs, use.interactions = FALSE, seed = seed, poly.deg = 3, num.folds = 5, num.means = 3, cov.grids = gridmaps.sm2D)
 BaseP.logORCDRC.ncv.time <- system.time(BaseP.logORCDRC.ncv <- sparsereg3D.ncv(sparse.reg = BaseP.logORCDRC.preproc, lambda = seq(0,0.2,0.001)))
 BaseP.logORCDRC.time <- system.time(BaseP.logORCDRC <- sparsereg3D.sel(sparse.reg = BaseP.logORCDRC.preproc ,lambda = seq(0,0,0), step = TRUE))
 #logORCDRC.p.pred <- sparsereg3D.pred(model.info = logORCDRC.p.sel, chunk.size = 20000, grids = gridmaps.sm2D, depths = c(-0.1,-0.2,-0.3))
 
 
-IntL.logORCDRC.preproc <- pre.sparsereg3D(base.model = log.ORCDRC.fun, use.hier = FALSE, profiles = bor.profs, use.interactions = TRUE, seed = seed, poly.deg = 1, num.folds = 5, num.means = 3, cov.grids = gridmaps.sm2D)    
+IntL.logORCDRC.preproc <- pre.sparsereg3D(base.model = log.ORCDRC.fun, use.hier = FALSE, profiles = bor.profs, use.interactions = TRUE, seed = seed, poly.deg = 1, num.folds = 5, num.means = 3, cov.grids = gridmaps.sm2D)
 IntL.logORCDRC.ncv.time <- system.time(IntL.logORCDRC.ncv <- sparsereg3D.ncv(sparse.reg = IntL.logORCDRC.preproc, lambda = seq(0,0,0)))
 IntL.logORCDRC.time <- system.time(IntL.logORCDRC <- sparsereg3D.sel(sparse.reg = IntL.logORCDRC.preproc ,lambda = seq(0,0,0), step = TRUE))
 #logORCDRC.l.pred <- sparsereg3D.pred(model.info = IntL.logORCDRC, chunk.size = 20000, grids = gridmaps.sm2D, depths = c(-0.1,-0.2,-0.3))
@@ -220,7 +220,7 @@ IntL.logORCDRC.time <- system.time(IntL.logORCDRC <- sparsereg3D.sel(sparse.reg 
 
 source(paste(fun.path,"sparsereg3D.ncv.r",sep="/"))
 source(paste(fun.path,"sparsereg3D.sel.r",sep="/"))
-IntP.logORCDRC.preproc <- pre.sparsereg3D(base.model = log.ORCDRC.fun, use.hier = FALSE, profiles = bor.profs, use.interactions = TRUE, seed = seed, poly.deg = 3, num.folds = 5, num.means = 3, cov.grids = gridmaps40)    
+IntP.logORCDRC.preproc <- pre.sparsereg3D(base.model = log.ORCDRC.fun, use.hier = FALSE, profiles = bor.profs, use.interactions = TRUE, seed = seed, poly.deg = 3, num.folds = 5, num.means = 3, cov.grids = gridmaps40)
 IntP.logORCDRC.ncv.time <- system.time(IntP.logORCDRC.ncv <- sparsereg3D.ncv(sparse.reg = IntP.logORCDRC.preproc,lambda = 0, step = TRUE)) #,w = seq(0.1, 1, 0.1)
 IntP.logORCDRC.ncv[1:3]
 IntP.logORCDRC.time <- system.time(IntP.logORCDRC <- sparsereg3D.sel(sparse.reg = IntP.logORCDRC.preproc ,lambda = seq(0,0.2,0.01)))
@@ -238,7 +238,7 @@ num.coef <- function(models){
     non.zero.effects <- length(coef.list)
     main.effects <- (which(coef.list == 1))
     main.vars <- name.coef[main.effects]
-    
+
     if(length(grep("depth", main.vars)) > 1){
       main.vars <- main.vars[1:(length(main.vars)-(length(grep("depth", main.vars))-1))]
     }
@@ -250,12 +250,12 @@ num.coef <- function(models){
     }else{
       interaction.effects <- (which(coef.list == 2))
       num.int.effects <- length(interaction.effects)
-      int.vars <- unique(do.call(rbind, split.names[interaction.effects])[,1])  
+      int.vars <- unique(do.call(rbind, split.names[interaction.effects])[,1])
       if(length(which(int.vars %in% name.coef[main.effects])) != length(int.vars)){
         int.vars <- length(which(int.vars %ni% name.coef[main.effects]))
         num.vars <- length(main.vars) + int.vars
       }
-      
+
     }
     models[[i]] <- data.frame(non.zero = non.zero.effects, env.vars = num.vars, main.effects = num.main.effects, int.effecs = num.int.effects)
   }
@@ -274,34 +274,34 @@ registerDoParallel(cores=4)
 pack = (.packages())
 
 
-result = foreach (j = 1:2, .packages = pack) %dopar% { 
-  
+result = foreach (j = 1:2, .packages = pack) %dopar% {
+
   if (j==1){
-    IntHL.logORCDRC.preproc <- pre.sparsereg3D(base.model = log.ORCDRC.fun, use.hier = TRUE, profiles = bor.profs, use.interactions = TRUE, seed = seed, poly.deg = 1, num.folds = 5, num.means = 3, cov.grids = gridmaps.sm2D)    
+    IntHL.logORCDRC.preproc <- pre.sparsereg3D(base.model = log.ORCDRC.fun, use.hier = TRUE, profiles = bor.profs, use.interactions = TRUE, seed = seed, poly.deg = 1, num.folds = 5, num.means = 3, cov.grids = gridmaps.sm2D)
     IntHL.logORCDRC.ncv.time <- system.time(IntHL.logORCDRC.ncv <- sparsereg3D.ncv(sparse.reg = IntHL.logORCDRC.preproc, lambda = seq(0,5,0.1)))
     IntHL.logORCDRC.time <- system.time(IntHL.logORCDRC <- sparsereg3D.sel(sparse.reg = IntHL.logORCDRC.preproc ,lambda = seq(0,5,0.1)))
     #logORCDRC.l.pred <- sparsereg3D.pred(model.info = IntHL.logORCDRC, chunk.size = 20000, grids = gridmaps.sm2D, depths = c(-0.1,-0.2,-0.3))
     list(IntHL.logORCDRC.preproc, IntHL.logORCDRC.ncv.time, IntHL.logORCDRC.ncv, IntHL.logORCDRC.time, IntHL.logORCDRC)
   } else if (j==2) {
-    IntHP.logORCDRC.preproc <- pre.sparsereg3D(base.model = log.ORCDRC.fun, use.hier = TRUE, profiles = bor.profs, use.interactions = TRUE, seed = seed, poly.deg = 3, num.folds = 5, num.means = 3, cov.grids = gridmaps.sm2D)    
+    IntHP.logORCDRC.preproc <- pre.sparsereg3D(base.model = log.ORCDRC.fun, use.hier = TRUE, profiles = bor.profs, use.interactions = TRUE, seed = seed, poly.deg = 3, num.folds = 5, num.means = 3, cov.grids = gridmaps.sm2D)
     IntHP.logORCDRC.ncv.time <- system.time(IntHP.logORCDRC.ncv <- sparsereg3D.ncv(sparse.reg = IntHP.logORCDRC.preproc, lambda = seq(0,5,0.1)))
     IntHP.logORCDRC.time <- system.time(IntHP.logORCDRC <- sparsereg3D.sel(sparse.reg = IntHP.logORCDRC.preproc ,lambda = seq(0,5,0.1)))
     #logORCDRC.l.pred <- sparsereg3D.pred(model.info = IntHP.logORCDRC, chunk.size = 20000, grids = gridmaps.sm2D, depths = c(-0.1,-0.2,-0.3))
     list(IntHP.logORCDRC.preproc, IntHP.logORCDRC.ncv.time, IntHP.logORCDRC.ncv, IntHP.logORCDRC.time, IntHP.logORCDRC)
   }
-  
+
 }
 
 stopImplicitCluster()
 
 IntHL.logORCDRC.preproc <- result[[1]][[1]]
-IntHL.logORCDRC.ncv.time <- result[[1]][[2]] 
+IntHL.logORCDRC.ncv.time <- result[[1]][[2]]
 IntHL.logORCDRC.ncv <- result[[1]][[3]]
 IntHL.logORCDRC.time <- result[[1]][[4]]
 IntHL.logORCDRC <- result[[1]][[5]]
 
 IntHP.logORCDRC.preproc <- result[[2]][[1]]
-IntHP.logORCDRC.ncv.time <- result[[2]][[2]] 
+IntHP.logORCDRC.ncv.time <- result[[2]][[2]]
 IntHP.logORCDRC.ncv <- result[[2]][[3]]
 IntHP.logORCDRC.time <- result[[2]][[4]]
 IntHP.logORCDRC <- result[[2]][[5]]
@@ -316,16 +316,16 @@ IntHP.logORCDRC <- result[[2]][[5]]
 #Define data to be plotted
 #dfplot = ggplot(df, aes(x = logORCDRC, y = pred))
 
-#Assemble a x-axis title. The 'atop' function allows you to have two lines of 
+#Assemble a x-axis title. The 'atop' function allows you to have two lines of
 #text in a pasted-together expression
 #my.xlab = expression(atop(paste("Observed log(1+SOC)")))
-#Assemble a y-axis title using the same method. Two spaces are needed after 
+#Assemble a y-axis title using the same method. Two spaces are needed after
 #"Temperature" to make proper spacing on the y-axis title for some reason
 #my.ylab = expression(atop(paste("Predicted log(1+SOC)")))
 
 #Open a new png device to print the figure out to (or use tiff, pdf, etc).
 #png(filename = "BaseL.Obs.Pred.png", width = 600, height = 600, units = 'px')
-#print(dfplot + 
+#print(dfplot +
         #Define point shape and set alpha transparency
         #geom_point(alpha = 1/5, color = alpha("red"), size = 3) +
         #draw a dashed line f unity with geom_abline
@@ -337,7 +337,7 @@ IntHP.logORCDRC <- result[[2]][[5]]
         #Adjust the plot margins slightly
 
 #) #end of print statement
-#dev.off() #close the png device to save the figure. 
+#dev.off() #close the png device to save the figure.
 
 #============================= Coefficients tables for logORCDRC models ==============================================================================
 
@@ -430,29 +430,29 @@ intbasedif <- function(formula, depth.inc, profiles, cov.grids, poly = 3, num.fo
   IntP.seq = data.frame()
   BaseP.seq = data.frame()
   profiles.i = profiles
-  
-  
+
+
   for(i in 1:length(depth.seq)){
     profiles.i@horizons <- profiles@horizons[profiles@horizons$Bottom < round(max.depth - depth.seq[i]),]
-    
+
     IntP.preproc <- pre.sparsereg3D(base.model = formula, use.hier = FALSE, profiles = profiles.i, use.interactions = TRUE, poly.deg = poly.deg, num.folds = num.folds, num.means = num.means, cov.grids = cov.grids, seed = seed)
     IntP.seq <- rbind(IntP.seq, sparsereg3D.ncva(sparse.reg = IntP.preproc, lambda = lambda.seq, w = weights)[1:2])
-    
-    BaseP.preproc <- pre.sparsereg3D(base.model = formula, use.hier = FALSE, profiles = profiles.i, use.interactions = FALSE, poly.deg = poly.deg, num.folds = num.folds, num.means = num.means, cov.grids = cov.grids, seed = seed) 
+
+    BaseP.preproc <- pre.sparsereg3D(base.model = formula, use.hier = FALSE, profiles = profiles.i, use.interactions = FALSE, poly.deg = poly.deg, num.folds = num.folds, num.means = num.means, cov.grids = cov.grids, seed = seed)
     BaseP.seq <- rbind(BaseP.seq, sparsereg3D.ncva(sparse.reg = BaseP.preproc, lambda = lambda.seq, w = weights)[1:2])
   }
   IntP.data <- data.frame(Depth = c(max.depth, sort(depth.seq[-1], decreasing = TRUE)), RMSE = IntP.seq$RMSE, variable = rep("IntP",length(depth.seq)))
   BaseP.data <- data.frame(Depth = c(max.depth, sort(depth.seq[-1], decreasing = TRUE)), RMSE = BaseP.seq$RMSE, variable = rep("BaseP",length(depth.seq)))
-  
-  
+
+
   BIP.data <- rbind(BaseP.data,IntP.data)
   BIP.data$variable <- factor(BIP.data$variable)
   names(BIP.data) <- c("Depth", "RMSE", "Model")
   BIP.data$RMSE <- round(BIP.data$RMSE,2)
-  
+
   p <- ggplot(BIP.data, aes(Depth, RMSE, colour = Model, group = Model)) + geom_line()  + geom_point() +  theme_classic(base_size = 10)
-  plot <- p + geom_label_repel(aes(label = BIP.data$RMSE, fill = Model), color = 'white', size = 5.5) + theme(legend.position = "bottom") +theme(legend.text=element_text(size=14))+theme(axis.text=element_text(size=14),axis.title=element_text(size=14,face="bold"))+labs(x="Depth",y="RMSE") 
-  
+  plot <- p + geom_label_repel(aes(label = BIP.data$RMSE, fill = Model), color = 'white', size = 5.5) + theme(legend.position = "bottom") +theme(legend.text=element_text(size=14))+theme(axis.text=element_text(size=14),axis.title=element_text(size=14,face="bold"))+labs(x="Depth",y="RMSE")
+
   return(plot)
 }
 
@@ -491,8 +491,8 @@ logORC.pred@data$prediction_0.30 <- (logORCDRC.l.pred[[3]]$pred)
 
 zmax <- max(logORC.pred$prediction_0.05, logORC.pred$prediction_0.15, logORC.pred$prediction_0.30)
 zmin <- min(logORC.pred$prediction_0.05, logORC.pred$prediction_0.15, logORC.pred$prediction_0.30)
-zmax <- round(zmax) 
-zmin <- round(zmin) 
+zmax <- round(zmax)
+zmin <- round(zmin)
 
 ramp <- seq(from = zmin, to = zmax, by = 0.1)
 color.SOM <- colorRampPalette(c("blue", "light green", "orange" , "red"))
@@ -510,7 +510,7 @@ writeGDAL(gridmaps.sm2D[,"DEM"], fname = paste(getwd(), "Bor_dem.tif", sep = "/"
 pts = list("sp.points", bor.sp, pch = 3, col = "black", alpha = .7)
 
 p22 <- spplot(gridmaps40, "Dist", asp = 1, at = ramp, col.regions = color.SOM, colorkey=FALSE, sp.layout = list(pts))
- 
+
 
 pdf("BOR_logSOC_5.pdf",width = 6, height = 12)
 p1
@@ -537,23 +537,23 @@ seed = 1
 pH.fun <- as.formula(paste("pH ~", paste(c(CovNames,"depth"), collapse="+")))
 
 # pH results
-BaseL.pH.preproc <- pre.sparsereg3D(base.model = pH.fun, use.hier = FALSE, profiles = bor.profs, use.interactions = FALSE, seed = seed, poly.deg = 1, num.folds = 5, num.means = 5, cov.grids = gridmaps.sm2D) 
+BaseL.pH.preproc <- pre.sparsereg3D(base.model = pH.fun, use.hier = FALSE, profiles = bor.profs, use.interactions = FALSE, seed = seed, poly.deg = 1, num.folds = 5, num.means = 5, cov.grids = gridmaps.sm2D)
 BaseL.pH.ncv.time <- system.time(BaseL.pH.ncv <- sparsereg3D.ncv(sparse.reg = BaseL.pH.preproc, lambda = seq(0,0.2,0.001)))
 BaseL.pH.time <- system.time(BaseL.pH <- sparsereg3D.sel(sparse.reg = BaseL.pH.preproc ,lambda = seq(0,0.2,0.001)))
 #pH.l.pred <- sparsereg3D.pred(model.info = BaseL.pH, chunk.size = 20000, grids = gridmaps.sm2D, depths = c(-0.1,-0.2,-0.3))
 
-BaseP.pH.preproc <- pre.sparsereg3D(base.model = pH.fun, use.hier = FALSE, profiles = bor.profs, use.interactions = FALSE, seed = seed, poly.deg = 3, num.folds = 5, num.means = 5, cov.grids = gridmaps.sm2D)   
+BaseP.pH.preproc <- pre.sparsereg3D(base.model = pH.fun, use.hier = FALSE, profiles = bor.profs, use.interactions = FALSE, seed = seed, poly.deg = 3, num.folds = 5, num.means = 5, cov.grids = gridmaps.sm2D)
 BaseP.pH.ncv.time <- system.time(BaseP.pH.ncv <- sparsereg3D.ncv(sparse.reg = BaseP.pH.preproc, lambda = seq(0,0.2,0.001)))
 BaseP.pH.time <- system.time(BaseP.pH <- sparsereg3D.sel(sparse.reg = BaseP.pH.preproc ,lambda = seq(0,0.2,0.001)))
 #pH.p.pred <- sparsereg3D.pred(model.info = pH.p.sel, chunk.size = 20000, grids = gridmaps.sm2D, depths = c(-0.1,-0.2,-0.3))
 
 
-IntL.pH.preproc <- pre.sparsereg3D(base.model = pH.fun, use.hier = FALSE, profiles = bor.profs, use.interactions = TRUE, seed = seed, poly.deg = 1, num.folds = 5, num.means = 5, cov.grids = gridmaps.sm2D)   
+IntL.pH.preproc <- pre.sparsereg3D(base.model = pH.fun, use.hier = FALSE, profiles = bor.profs, use.interactions = TRUE, seed = seed, poly.deg = 1, num.folds = 5, num.means = 5, cov.grids = gridmaps.sm2D)
 IntL.pH.ncv.time <- system.time(IntL.pH.ncv <- sparsereg3D.ncv(sparse.reg = IntL.pH.preproc, lambda = seq(0,0.2,0.001)))
 IntL.pH.time <- system.time(IntL.pH <- sparsereg3D.sel(sparse.reg = IntL.pH.preproc ,lambda = seq(0,0.2,0.001)))
 #pH.l.pred <- sparsereg3D.pred(model.info = IntL.pH, chunk.size = 20000, grids = gridmaps.sm2D, depths = c(-0.1,-0.2,-0.3))
 
-IntP.pH.preproc <- pre.sparsereg3D(base.model = pH.fun, use.hier = FALSE, profiles = bor.profs, use.interactions = TRUE, seed = seed, poly.deg = 3, num.folds = 5, num.means = 3, cov.grids = gridmaps.sm2D)#, kmean.vars = all.vars(log.ORCDRC.fun), cum.prop = 0.90)    
+IntP.pH.preproc <- pre.sparsereg3D(base.model = pH.fun, use.hier = FALSE, profiles = bor.profs, use.interactions = TRUE, seed = seed, poly.deg = 3, num.folds = 5, num.means = 3, cov.grids = gridmaps.sm2D)#, kmean.vars = all.vars(log.ORCDRC.fun), cum.prop = 0.90)
 IntP.pH.ncv.time <- system.time(IntP.pH.ncv <- sparsereg3D.ncv(sparse.reg = IntP.pH.preproc, lambda = seq(0,0.2,0.001)))
 IntP.pH.time <- system.time(IntP.pH <- sparsereg3D.sel(sparse.reg = IntP.pH.preproc ,lambda = seq(0,0.2,0.001)))
 #pH.l.pred <- sparsereg3D.pred(model.info = IntP.pH, chunk.size = 20000, grids = gridmaps.sm2D, depths = c(-0.1,-0.2,-0.3))
@@ -567,34 +567,34 @@ registerDoParallel(cores=4)
 pack = (.packages())
 
 
-pH.result = foreach (j = 1:2, .packages = pack) %dopar% { 
-  
+pH.result = foreach (j = 1:2, .packages = pack) %dopar% {
+
   if (j==1){
-    IntHL.pH.preproc <- pre.sparsereg3D(base.model = pH.fun, use.hier = TRUE, seed = seed, profiles = bor.profs, use.interactions = TRUE, poly.deg = 1, num.folds = 5, num.means = 3, cov.grids = gridmaps.sm2D)    
+    IntHL.pH.preproc <- pre.sparsereg3D(base.model = pH.fun, use.hier = TRUE, seed = seed, profiles = bor.profs, use.interactions = TRUE, poly.deg = 1, num.folds = 5, num.means = 3, cov.grids = gridmaps.sm2D)
     IntHL.pH.ncv.time <- system.time(IntHL.pH.ncv <- sparsereg3D.ncv(sparse.reg = IntHL.pH.preproc, lambda = seq(0,5,0.1)))
     IntHL.pH.time <- system.time(IntHL.pH <- sparsereg3D.sel(sparse.reg = IntHL.pH.preproc ,lambda = seq(0,5,0.1)))
     #pH.l.pred <- sparsereg3D.pred(model.info = IntHL.pH, chunk.size = 20000, grids = gridmaps.sm2D, depths = c(-0.1,-0.2,-0.3))
     list(IntHL.pH.preproc, IntHL.pH.ncv.time, IntHL.pH.ncv, IntHL.pH.time, IntHL.pH)
   } else if (j==2) {
-    IntHP.pH.preproc <- pre.sparsereg3D(base.model = pH.fun, use.hier = TRUE, seed = seed, profiles = bor.profs, use.interactions = TRUE, poly.deg = 3, num.folds = 5, num.means = 3, cov.grids = gridmaps.sm2D)    
+    IntHP.pH.preproc <- pre.sparsereg3D(base.model = pH.fun, use.hier = TRUE, seed = seed, profiles = bor.profs, use.interactions = TRUE, poly.deg = 3, num.folds = 5, num.means = 3, cov.grids = gridmaps.sm2D)
     IntHP.pH.ncv.time <- system.time(IntHP.pH.ncv <- sparsereg3D.ncv(sparse.reg = IntHP.pH.preproc, lambda = seq(0,5,0.1)))
     IntHP.pH.time <- system.time(IntHP.pH <- sparsereg3D.sel(sparse.reg = IntHP.pH.preproc ,lambda = seq(0,5,0.1)))
     #pH.l.pred <- sparsereg3D.pred(model.info = IntHP.pH, chunk.size = 20000, grids = gridmaps.sm2D, depths = c(-0.1,-0.2,-0.3))
     list(IntHP.pH.preproc, IntHP.pH.ncv.time, IntHP.pH.ncv, IntHP.pH.time, IntHP.pH)
   }
-  
+
 }
 
 stopImplicitCluster()
 
 IntHL.pH.preproc <- pH.result[[1]][[1]]
-IntHL.pH.ncv.time <- pH.result[[1]][[2]] 
+IntHL.pH.ncv.time <- pH.result[[1]][[2]]
 IntHL.pH.ncv <- pH.result[[1]][[3]]
 IntHL.pH.time <- pH.result[[1]][[4]]
 IntHL.pH <- pH.result[[1]][[5]]
 
 IntHP.pH.preproc <- pH.result[[2]][[1]]
-IntHP.pH.ncv.time <- pH.result[[2]][[2]] 
+IntHP.pH.ncv.time <- pH.result[[2]][[2]]
 IntHP.pH.ncv <- pH.result[[2]][[3]]
 IntHP.pH.time <- pH.result[[2]][[4]]
 IntHP.pH <- pH.result[[2]][[5]]
@@ -661,25 +661,25 @@ intbasedif <- function(formula, depth.inc, profiles, cov.grids, poly = 3, num.fo
   IntP.seq = data.frame()
   BaseP.seq = data.frame()
   profiles.i = profiles
-  
-  
+
+
   for(i in 1:length(depth.seq)){
     profiles.i@horizons <- profiles@horizons[profiles@horizons$Bottom <= round(max.depth - depth.seq[i]),]
-    
+
     IntP.preproc <- pre.sparsereg3D(base.model = formula, use.hier = FALSE, profiles = profiles.i, use.interactions = TRUE, poly.deg = poly.deg, num.folds = num.folds, num.means = num.means, cov.grids = cov.grids, seed = seed)
     IntP.seq <- rbind(IntP.seq, sparsereg3D.ncv(sparse.reg = IntP.preproc, lambda = lambda.seq, w = weights)[1:2])
-    
-    BaseP.preproc <- pre.sparsereg3D(base.model = formula, use.hier = FALSE, profiles = profiles.i, use.interactions = FALSE, poly.deg = poly.deg, num.folds = num.folds, num.means = num.means, cov.grids = cov.grids, seed = seed) 
+
+    BaseP.preproc <- pre.sparsereg3D(base.model = formula, use.hier = FALSE, profiles = profiles.i, use.interactions = FALSE, poly.deg = poly.deg, num.folds = num.folds, num.means = num.means, cov.grids = cov.grids, seed = seed)
     BaseP.seq <- rbind(BaseP.seq, sparsereg3D.ncv(sparse.reg = BaseP.preproc, lambda = lambda.seq, w = weights)[1:2])
   }
   IntP.data <- data.frame(Depth = c(max.depth, sort(depth.seq[-1], decreasing = TRUE)), RMSE = IntP.seq$RMSE, variable = rep("IntP",length(depth.seq)))
   BaseP.data <- data.frame(Depth = c(max.depth, sort(depth.seq[-1], decreasing = TRUE)), RMSE = BaseP.seq$RMSE, variable = rep("BaseP",length(depth.seq)))
-  
-  
+
+
   BIP.data <- rbind(BaseP.data,IntP.data)
   BIP.data$variable <- factor(BIP.data$variable)
   plot <- qplot(Depth, RMSE, data = BIP.data, geom = c("point", "line"), color = variable) + theme_bw() + theme(legend.text = element_text(size = 12)) + theme(axis.text = element_text(size=12), axis.title = element_text(size = 14, face = "bold")) + labs(x = "Depth [cm]",y = "RMSE")
-  
+
   return(plot)
 }
 
