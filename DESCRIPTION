@@ -19,5 +19,6 @@ Imports: rgdal,
     magrittr,
     doParallel,
     foreach,
-    gstat
+    gstat,
+    GSIF
 RoxygenNote: 6.0.1
