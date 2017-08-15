@@ -24,7 +24,20 @@ How to use 'sparsereg3D' package
 The presented example uses the Edgeroi data set \[<http://plotkml.r-forge.r-project.org/edgeroi.html>\]. This is one of the standard soil data sets used to test soil mapping methods in Australia. It contains 359 soil profiles with soil observations in sites and horizons tables;
 
 ``` r
+library(sparsereg3D)
+library(rgdal)
 library(GSIF)
+library(gdalUtils)
+library(raster)
+library(plyr)
+library(aqp)
+library(glmnet)
+library(hierNet)
+library(magrittr)
+library(doParallel)
+library(foreach)
+library(caret)
+
 data(edgeroi)
 
 
@@ -103,7 +116,7 @@ MLR.logORC.preproc <- pre.sparsereg3D(base.model = formulaString, use.hier = FAL
 MLR.logORC.ncv <- sparsereg3D.ncv(sparse.reg = MLR.logORC.preproc, lambda = seq(0,0.2,0.001))
 
 # Model selection
-MLR.logORC <- sparsereg3D.sel(sparse.reg = MLR.logORC.preproc , lambda = seq(0,0,0), step = TRUE)
+MLR.logORC <- sparsereg3D.sel(sparse.reg = MLR.logORC.preproc , lambda = seq(0,0.2,0.001))
 
 # Spatial prediction at 0.1m depth
 MLR.pred <- sparsereg3D.pred(model.info = MLR.logORC, chunk.size = 20000, grids = cov.maps, depths = c(-0.1))
