@@ -21,7 +21,7 @@ library(sparsereg3D)
 How to use 'sparsereg3D' package
 --------------------------------
 
-The presented example uses the Edgeroi data set \[<http://plotkml.r-forge.r-project.org/edgeroi.html>\]. This is one of the standard soil data sets used to test soil mapping methods in Australia. It contains 359 soil profiles with soil observations in sites and horizons tables;
+The presented example uses the Edgeroi data set \[<http://gsif.r-forge.r-project.org/edgeroi.html>\]. This is one of the standard soil data sets used to test soil mapping methods in Australia. It contains 359 soil profiles with soil observations in sites and horizons tables;
 
 ``` r
 library(sparsereg3D)
@@ -66,11 +66,8 @@ con.100.stack <- stack(edgeroi.grids100[c("MVBSRT6", "TI1LAN6","TI2LAN6", "PCKGA
 
 e <- extent(edgeroi.grids)
 
-cat.100.stack <- crop(cat.100.stack, e)
-con.100.stack <- crop(con.100.stack, e)
-
-con.250.stack <- resample(con.100.stack, stack250m, method = "bilinear")
-cat.250.stack <- resample(cat.100.stack, stack250m, method = "ngb")
+con.250.stack <- crop(con.100.stack, e) %>% resample(., stack250m, method = "bilinear")
+cat.250.stack <- crop(cat.100.stack, e) %>% resample(., stack250m, method = "ngb")
 
 grids250 <- stack(con.250.stack, cat.250.stack, stack250m)
 names(grids250)
@@ -117,6 +114,9 @@ MLR.logORC.ncv <- sparsereg3D.ncv(sparse.reg = MLR.logORC.preproc, lambda = seq(
 
 # Model selection
 MLR.logORC <- sparsereg3D.sel(sparse.reg = MLR.logORC.preproc , lambda = seq(0,0.2,0.001))
+
+# Model coefficients:
+MLR.logORC$coefficients
 
 # Spatial prediction at 0.1m depth
 MLR.pred <- sparsereg3D.pred(model.info = MLR.logORC, chunk.size = 20000, grids = cov.maps, depths = c(-0.1))
