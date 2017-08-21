@@ -4,15 +4,15 @@ Sparsereg3D
 Introduction
 ------------
 
-This package implements the methodology proposed in the manuscript "Sparse Regression Interaction Models for Spatial Predictions of Soil Properties in 3D" by Pejovic M., Nikolic M., Heuvelink G., Hengl T., Kilibarda M. and Bajat B., that was subbmited to the journal "Computers and Geosciences" on August 2017. The proposed methodology utilizes lasso regression (standard and hierarchical) for making 3D interaction model of soil variables. Once the 3D model is created, spatial prediction can be made at different soil depths. The term "Interaction" in the title refers to the interaction effects between spatial covariates and soil depth, which are particularly important for modeling varying influences of external factors with soil depth. Broadly, the methodology is centered around two key points: 1) using lasso to select the best predicting linear model in cases where many varaibles (that arise from including interactions) are available; 2) proper model evaluation by using Nested Cross-Validation; and 3) spatial prediction over grids that refer to different soil depths.
+This package implements the methodology proposed in the manuscript "Sparse Regression Interaction Models for Spatial Predictions of Soil Properties in 3D" by Pejovic M., Nikolic M., Heuvelink G., Hengl T., Kilibarda M. and Bajat B., that was subbmited to the journal "Computers and Geosciences" on August 2017. The proposed methodology utilizes lasso regression (standard and hierarchical) for making 3D interaction model of soil variables. Once the 3D model is created, spatial prediction can be made at different soil depths. The term "Interaction" in the title refers to the interaction effects between spatial covariates and soil depth, which are particularly important for modeling varying influences of external factors with soil depth. Broadly, the methodology solves three key issues: 1) selection of the best predicting linear model using lasso in cases where many varaibles (that arise from including interactions) are available; 2) proper model evaluation using nested cross-validation in case when tuning meta-parameter is needed; and 3) spatial prediction over grids that refer to different soil depths.
 
 How to install the package
 --------------------------
 
-The package on this repository is in its "raw" form, often referred to as 'source'. If you have Rtools and LaTeX installed, you will have no problem building the package from source by hand. This has been made easy using package devtools using the following commands:
+The package on this repository is in its "raw" form, often referred to as 'source'. So, the latest version of 'sparsereg3D' package can be install using package devtools following commands:
 
 ``` r
-install_github("hadley/devtools")
+install.packages("devtools")
 library(devtools)
 install_github("pejovic/sparsereg3D")
 library(sparsereg3D)
