@@ -19,6 +19,8 @@
 #' @param step logical. If TRUE stepwise procedure will be used when fitting OLS model
 #' @param seed random number generator
 #' @param all logical. If TRUE a detailed output will be prepared.
+#' @param lambda.1se logical. If TRUE one sigma lambda rule will be used (largest lambda value with cv.err less than or equal to min(cv.err)+ SE).
+#' @param w weighted parameter (positive number) that controls the level of using observations from deeper layers as less informative. General weighted model is $w=1/(1+w*depth)$. This option is still under development, so it is not included in the function for model selection.
 #'
 #'
 #' @return List of objects including:
@@ -32,7 +34,7 @@
 #'
 #'  @keywords Model evaluation
 
-sparsereg3D.ncv <- function(sparse.reg, lambda, w = NULL, step = FALSE, ols = FALSE, all = FALSE){
+sparsereg3D.ncv <- function(sparse.reg, lambda, step = FALSE, ols = FALSE, all = FALSE, lambda.1se = FALSE, w = NULL){
 
   if(step){
     ols = TRUE
@@ -94,14 +96,17 @@ sparsereg3D.ncv <- function(sparse.reg, lambda, w = NULL, step = FALSE, ols = FA
         if(is.null(w)){
           train.cv <- cv.glmnet(as.matrix(training.data[,-1]), training.data[,1], alpha = 1, lambda = lambda, foldid = inner.fold.indices, type.measure = "mse", weights = 1/(1 + 0*weight.data[,"hdepth"]/100 + 0*abs(weight.data[,"mid.depth"]))) #
           lasso <- train.cv$glmnet.fit
-          lambda.min <- train.cv$lambda.min
+          if(!lambda.1se){
+            lambda.min <- train.cv$lambda.min
+          }else{
+            lambda.min <- train.cv$lambda.1se
+          }
           min.cv.error <- min(train.cv$cvm)
           weight = NA
         }else{
           train.cv.errors <- matrix(NA, nrow = length(w), ncol = length(lambda))
           for(j in 1:length(w)){
-            #train.cv.errors[j,] <- cv.glmnet(as.matrix(training.data[,-1]), training.data[,1], alpha = 1,lambda = lambda, foldid = inner.fold.indices, type.measure = "mse", weights = exp(-w[j]*abs(weight.data[,"mid.depth"])))$cvm #
-            train.cv.errors[j,] <- cv.glmnet(as.matrix(training.data[,-1]), training.data[,1], alpha = 1,lambda = lambda, foldid = inner.fold.indices, type.measure = "mse", weights = 1/(1 + 0*weight.data[,"hdepth"]/100 + (w[j])*abs(weight.data[,"mid.depth"])^2))$cvm #
+            train.cv.errors[j,] <- cv.glmnet(as.matrix(training.data[,-1]), training.data[,1], alpha = 1,lambda = lambda, foldid = inner.fold.indices, type.measure = "mse", weights = 1/(1 + 0*weight.data[,"hdepth"]/100 + (w[j])*abs(weight.data[,"mid.depth"])))$cvm #
           }
           min.cv.error <- min(train.cv.errors)
           min.ind <- which(train.cv.errors == min(train.cv.errors), arr.ind=TRUE) # ova funkcija daje kolonu i red minimalne greske
@@ -109,6 +114,11 @@ sparsereg3D.ncv <- function(sparse.reg, lambda, w = NULL, step = FALSE, ols = FA
           train.cv <- cv.glmnet(as.matrix(training.data[,-1]), training.data[,1], alpha = 1, lambda = lambda, foldid = inner.fold.indices, type.measure = "mse", weights = 1/(1 + 0*weight.data[,"hdepth"]/100 + (w[min.ind[1]])*abs(weight.data[,"mid.depth"])) )
           lasso <- train.cv$glmnet.fit # Ovde sam opet koristio cv.glmnet i ako sam trebao samo glmnet, samo iz ocaja...da bude potpuno isto kao i za slucaj bez tezina.
           weight = w[min.ind[1]]
+          if(!lambda.1se){
+            lambda.min <- train.cv$lambda.min
+          }else{
+            lambda.min <- train.cv$lambda.1se
+          }
         }
 
         # Inner crossvalidation loop with model selection
@@ -150,17 +160,23 @@ sparsereg3D.ncv <- function(sparse.reg, lambda, w = NULL, step = FALSE, ols = FA
       # Inner crossvalidation loop with model selection
       hier.path <- hierNet.path(training.main.effects, training.target, zz = training.int.effects, diagonal = FALSE, strong = TRUE, trace = 0, stand.main = FALSE, stand.int = FALSE)
       hier.lasso.cv <- hierNet.cv(hier.path, training.main.effects, training.target, folds = inner.obs.fold.list, trace=0)
-      final.hier.model <- hierNet(training.main.effects, training.target, zz = training.int.effects, diagonal=FALSE, strong=TRUE, lam = hier.lasso.cv$lamhat, center = TRUE, stand.main = FALSE, stand.int = FALSE)
+      if(!lambda.1se){
+        lambda.min <- hier.lasso.cv$lamhat
+      }else{
+        lambda.min <- hier.lasso.cv$lamhat.1se
+      }
+
+      final.hier.model <- hierNet(training.main.effects, training.target, zz = training.int.effects, diagonal = FALSE, strong=TRUE, lam = lambda.min, center = TRUE, stand.main = FALSE, stand.int = FALSE)
 
       # Extracting the coefficients of each model
       if(poly.deg == 1){
-        int.coeff <- as.matrix(hier.path$th[,,which(hier.lasso.cv$lamhat==hier.path$lamlist)][,length(main.effect.names)])
+        int.coeff <- as.matrix(hier.path$th[,,which(hier.path$lamlist == lambda.min)][,length(main.effect.names)])
       } else {
-        int.coeff <- as.matrix(hier.path$th[,,which(hier.lasso.cv$lamhat==hier.path$lamlist)][,(length(main.effect.names)-poly.deg+1):length(main.effect.names)])
+        int.coeff <- as.matrix(hier.path$th[,,which(hier.path$lamlist == lambda.min)][,(length(main.effect.names)-poly.deg+1):length(main.effect.names)])
       }
-      main.coeff <- hier.path$bp[,which(hier.lasso.cv$lamhat==hier.path$lamlist), drop = F] - hier.path$bn[,which(hier.lasso.cv$lamhat==hier.path$lamlist), drop = F]
+      main.coeff <- hier.path$bp[,which(hier.path$lamlist == lambda.min), drop = F] - hier.path$bn[,which(hier.path$lamlist == lambda.min), drop = F]
 
-      coef.list <- data.frame(cov.name=colnames(training.main.effects),main.coeff,int.coeff)
+      coef.list <- data.frame(cov.name = colnames(training.main.effects), main.coeff, int.coeff)
 
       models.ncv[[i]] <- coef.list
 

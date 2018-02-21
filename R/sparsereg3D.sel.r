@@ -21,6 +21,7 @@
 #' @param ols logical. If TRUE model will be fitted with OLS insted of using lasso
 #' @param step logical. If TRUE stepwise procedure will be used when fitting OLS model
 #' @param seed random number generator
+#' @param lambda.1se logical. If TRUE one sigma lambda rule will be used (largest lambda value with cv.err less than or equal to min(cv.err)+ SE).
 #'
 #'
 #' @return List of objects including:
@@ -35,7 +36,7 @@
 
 
 
-sparsereg3D.sel <- function(sparse.reg, lambda = 0, ols = FALSE, step = FALSE){
+sparsereg3D.sel <- function(sparse.reg, lambda = 0, ols = FALSE, step = FALSE, lambda.1se = FALSE){
 
   if(step){
     ols = TRUE
@@ -75,30 +76,38 @@ sparsereg3D.sel <- function(sparse.reg, lambda = 0, ols = FALSE, step = FALSE){
       }
 
       lasso.cv <- cv.glmnet(as.matrix(training.data[,-1]), training.data[,1], alpha = 1,lambda = lambda, foldid = fold.indices, type.measure = "mse")
-      coef.list <- predict(lasso.cv, type="coefficients", s=lasso.cv$lambda.min)
-      prediction <- predict(lasso.cv, newx = as.matrix(training.data[,-1]), type = "response", s=lasso.cv$lambda.min)
+      if(!lambda.1se){
+        lambda.min <- lasso.cv$lambda.min
+      }else{
+        lambda.min <- lasso.cv$lambda.1se
+      }
+      coef.list <- predict(lasso.cv, type="coefficients", s = lambda.min)
+      prediction <- predict(lasso.cv, newx = as.matrix(training.data[,-1]), type = "response", s = lambda.min)
     }else{
-
       # Hierarchical setting requires the separation of main effects and interaction effects
       training.main.effects <- as.matrix(profiles[,main.effect.names])
       training.int.effects <- as.matrix(profiles[,all.int.names])
       training.target <- (profiles[,target.name])
 
-
-      hier.path = hierNet.path(training.main.effects,training.target, zz = training.int.effects, diagonal=FALSE, strong=TRUE, trace=0, stand.main = FALSE, stand.int = FALSE)
+      hier.path = hierNet.path(training.main.effects,training.target, zz = training.int.effects, diagonal = FALSE, strong = TRUE, trace = 0, stand.main = FALSE, stand.int = FALSE)
       hier.lasso.cv = hierNet.cv(hier.path, training.main.effects, training.target, folds = obs.fold.list, trace=0)
-      hier.lasso.final <- hierNet(training.main.effects,training.target, zz = training.int.effects, diagonal=FALSE, strong=TRUE, lam = hier.lasso.cv$lamhat, center = TRUE, stand.main = FALSE, stand.int = FALSE)
+      if(!lambda.1se){
+        lambda.min <- hier.lasso.cv$lamhat
+      }else{
+        lambda.min <- hier.lasso.cv$lamhat.1se
+      }
+      hier.lasso.final <- hierNet(training.main.effects,training.target, zz = training.int.effects, diagonal = FALSE, strong = TRUE, lam = lambda.min, center = TRUE, stand.main = FALSE, stand.int = FALSE)
       prediction <- predict(hier.lasso.final, newx = training.main.effects, zz = training.int.effects)
 
       # Extracting the coefficients of final model
       if(poly.deg == 1){
-        int.coeff <- as.matrix(hier.path$th[,,which(hier.lasso.cv$lamhat==hier.path$lamlist)][,length(main.effect.names)])
+        int.coeff <- as.matrix(hier.path$th[,,which(hier.path$lamlist == lambda.min)][,length(main.effect.names)])
       } else {
-        int.coeff <- as.matrix(hier.path$th[,,which(hier.lasso.cv$lamhat==hier.path$lamlist)][,(length(main.effect.names)-poly.deg+1):length(main.effect.names)])
+        int.coeff <- as.matrix(hier.path$th[,,which(hier.path$lamlist == lambda.min)][,(length(main.effect.names)-poly.deg+1):length(main.effect.names)])
       }
-      main.coeff <- hier.path$bp[,which(hier.lasso.cv$lamhat==hier.path$lamlist), drop = F] - hier.path$bn[,which(hier.lasso.cv$lamhat==hier.path$lamlist), drop = F]
+      main.coeff <- hier.path$bp[,which(hier.path$lamlist == lambda.min), drop = F] - hier.path$bn[,which(hier.path$lamlist == lambda.min), drop = F]
 
-      coef.list <- data.frame(cov.name=colnames(training.main.effects),main.coeff,int.coeff)
+      coef.list <- data.frame(cov.name = colnames(training.main.effects), main.coeff,int.coeff)
     }
   }else{
     # selecting model with stepwise regression or plain ols
