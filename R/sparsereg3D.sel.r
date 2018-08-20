@@ -30,6 +30,7 @@
 #'  \item \code{lambda}:   Regularization parameter value for lasso models
 #'  \item \code{coefficients}:  Model coefficients
 #'  \item \code{std.param}:   Standardization parameters
+#'  \item \code{comp}: logical. Indicate whether the compositional variable is modeled or not.
 #' }
 #'
 #'  @keywords Model selection
@@ -47,8 +48,14 @@ sparsereg3D.sel <- function(sparse.reg, lambda = 0, ols = FALSE, step = FALSE, l
   profile.fold.list <- sparse.reg$folds$profile.fold.list
   obs.fold.list <- sparse.reg$folds$obs.fold.list
   profiles <- sparse.reg$profiles
-  target.name <- all.vars(sparse.reg$model$base.model)[1]
-  target.min <- min(profiles[,target.name]) # TODO Ako nula daje bolje rezultate, staviti nulu
+
+  if(sparse.reg$comp){
+    target.name <- sparse.reg$model$response
+  }else{
+    target.name <- all.vars(sparse.reg$model$base.model)[1]
+    target.min <- min(profiles[,target.name])
+  }
+
   use.interactions <- sparse.reg$model$use.interactions
   use.hier <- sparse.reg$model$use.hier
   main.effect.names <- sparse.reg$model$main.effect.names
@@ -65,6 +72,8 @@ sparsereg3D.sel <- function(sparse.reg, lambda = 0, ols = FALSE, step = FALSE, l
   for(i in 1:length(obs.fold.list)){
     fold.indices[obs.fold.list[[i]]] <- i
   }
+
+  if(!sparse.reg$comp){
 
   # Lasso training
   if(!ols){
@@ -127,12 +136,31 @@ sparsereg3D.sel <- function(sparse.reg, lambda = 0, ols = FALSE, step = FALSE, l
   # Regression summary list containing the final model, final lambda, model coefficients, and standardization parameters
   if(!ols){
     if(!use.hier){
-      model.info <- list(data = data.frame(profiles, prediction = prediction), model = list(model = lasso.cv, lambda = lasso.cv$lambda.min, target.name = target.name, main.effect.names = main.effect.names, depth.int.names = depth.int.names, use.interactions = use.interactions, use.hier = use.hier, poly.deg = poly.deg, base.model = base.model), coefficients = coef.list, std.par = std.par)
+      model.info <- list(data = data.frame(profiles, prediction = prediction), model = list(model = lasso.cv, lambda = lasso.cv$lambda.min, target.name = target.name, main.effect.names = main.effect.names, depth.int.names = depth.int.names, use.interactions = use.interactions, use.hier = use.hier, poly.deg = poly.deg, base.model = base.model), coefficients = coef.list, std.par = std.par, comp = FALSE)
     }else{
-      model.info <- list(data = data.frame(profiles, prediction = prediction), model = list(model = hier.lasso.final, lambda = hier.path$lamlist[which(hier.lasso.cv$lamhat == hier.path$lamlist)], target.name = target.name, main.effect.names = main.effect.names, depth.int.names = depth.int.names, use.interactions = use.interactions, use.hier = use.hier, poly.deg = poly.deg, base.model = base.model), coefficients = coef.list, std.par = std.par)
+      model.info <- list(data = data.frame(profiles, prediction = prediction), model = list(model = hier.lasso.final, lambda = hier.path$lamlist[which(hier.lasso.cv$lamhat == hier.path$lamlist)], target.name = target.name, main.effect.names = main.effect.names, depth.int.names = depth.int.names, use.interactions = use.interactions, use.hier = use.hier, poly.deg = poly.deg, base.model = base.model), coefficients = coef.list, std.par = std.par, comp = FALSE)
     }
   }
-
-
   return(model.info)
+
+  }else{
+    # Lasso training
+    if(use.interactions){
+      training.data <- subset(profiles, select = c(target.name, main.effect.names, depth.int.names))
+    }else{
+      training.data <- subset(profiles, select = c(target.name, main.effect.names))
+    }
+
+    lasso.cv <- cv.glmnet(as.matrix(training.data[,-c(1:3)]), as.matrix(training.data[, c(1:3)]), family="multinomial", alpha = 1,lambda = lambda, foldid = fold.indices)
+    coef.list <- predict(lasso.cv, type="coefficients", s=lasso.cv$lambda.min)
+    prediction <- predict(lasso.cv, newx = as.matrix(training.data[,-c(1:3)]), type = "response", s=lasso.cv$lambda.min)
+
+
+    # Regression summary list containing the final model, final lambda, model coefficients, and standardization parameters
+
+    model.info <- list(data = data.frame(profiles, prediction = prediction), model = list(model = lasso.cv, lambda = lasso.cv$lambda.min, target.name = target.name, main.effect.names = main.effect.names, depth.int.names = depth.int.names, use.interactions = use.interactions, use.hier = use.hier, poly.deg = poly.deg, base.model = base.model), coefficients = coef.list, std.par = std.par, comp = TRUE)
+
+    return(model.info)
+
+  }
 }

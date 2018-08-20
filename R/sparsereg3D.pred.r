@@ -35,11 +35,16 @@ sparsereg3D.pred <- function(model.info, depths, grids, chunk.size) {
 
   # Extracting data from model.info object
   std.par <- model.info$std.par
-  target.name <- model.info$model$target.name
+  if(model.info$comp){
+    target.name <- model.info$model$target.name
+  }else{
+    target.name <- all.vars(model.info$model$base.model)[1]
+    target.min <- min(profiles[,target.name])
+    use.hier <- model.info$model$use.hier
+  }
   main.effect.names <- model.info$model$main.effect.names
   depth.int.names <- model.info$model$depth.int.names
   use.interactions <- model.info$model$use.interactions
-  use.hier <- model.info$model$use.hier
   poly.deg <- model.info$model$poly.deg
   base.model <- model.info$model$base.model
 
@@ -84,8 +89,12 @@ sparsereg3D.pred <- function(model.info, depths, grids, chunk.size) {
     covs.data <- lapply(covs.data, function(x) {catcolwise(as.factor); return(x)})
   }
 
-  # Applying standardization parameters for dummy coding to transform categorical variables in each grid
-  covs.data <- mclapply(covs.data, function(x) subset(x, select = all.vars(base.model)[-1], drop=FALSE), mc.cores = num.cores) %>% mclapply(., function(x) predict(std.par$dummy.par, newdata=x),mc.cores = num.cores) %>% mclapply(., function(x) {colnames(x) <- gsub( "\\_|/|\\-|\"|\\s" , "." , colnames(x) ); return(x)}, mc.cores = num.cores)
+  if(model.info$comp){
+    # Applying standardization parameters for dummy coding to transform categorical variables in each grid
+    covs.data <- mclapply(covs.data, function(x) subset(x, select = all.vars(base.model), drop=FALSE), mc.cores = num.cores) %>% mclapply(., function(x) predict(std.par$dummy.par, newdata=x),mc.cores = num.cores) %>% mclapply(., function(x) {colnames(x) <- gsub( "\\_|/|\\-|\"|\\s" , "." , colnames(x) ); return(x)}, mc.cores = num.cores)
+  }else{
+    covs.data <- mclapply(covs.data, function(x) subset(x, select = all.vars(base.model)[-1], drop=FALSE), mc.cores = num.cores) %>% mclapply(., function(x) predict(std.par$dummy.par, newdata=x),mc.cores = num.cores) %>% mclapply(., function(x) {colnames(x) <- gsub( "\\_|/|\\-|\"|\\s" , "." , colnames(x) ); return(x)}, mc.cores = num.cores)
+  }
 
   # Splitting grids into chunks, computing interactions in parallel on these chunks
   if(use.interactions){
@@ -130,15 +139,23 @@ sparsereg3D.pred <- function(model.info, depths, grids, chunk.size) {
 
   registerDoParallel(cores = m.cores)
   #Final prediction
-    for(i in 1:length(grids.3D)) {
-      if(!use.hier){
-        grids.3D[[i]]$pred <- as.numeric(predict(model.info$model$model, s = model.info$model$model$lambda.min, newx = (covs.data[[i]])))
+  for(i in 1:length(grids.3D)) {
+    if(!use.hier){
+      if(model.info$comp){
+        comp.pred <- as.numeric(predict(model.info$model$model, s = model.info$model$model$lambda.min, newx = (covs.data[[i]]), type = "response")[,,1])
+        comp.pred <- data.frame(vars = rep(model.info$model$target.name, each = length(comp.pred)/length(model.info$model$target.name)), prediction = comp.pred)
+        comp.pred <- comp.pred %>% group_by(vars) %>% mutate(grouped_id = row_number()) %>% spread(vars, prediction) %>% dplyr::select(-grouped_id)
+        grids.3D[[i]]@data <- cbind(grids.3D[[i]]@data, comp.pred)
       }else{
-        grids.3D[[i]]$pred <- as.numeric(predict(model.info$model$model, newx = covs.data[[i]], newzz = covs.int.data[[i]]))
+        grids.3D[[i]]$pred <- as.numeric(predict(model.info$model$model, s = model.info$model$model$lambda.min, newx = (covs.data[[i]])))
       }
-      grids.3D[[i]]$pred <- pmax(grids.3D[[i]]$pred, 0) # TODO Ako bolje radi sa 0, staviti 0
-      grids.3D[[i]] <- grids.3D[[i]][,"pred"]
+
+    }else{
+      grids.3D[[i]]$pred <- as.numeric(predict(model.info$model$model, newx = covs.data[[i]], newzz = covs.int.data[[i]]))
     }
+    grids.3D[[i]]$pred <- pmax(grids.3D[[i]]$pred, 0) # TODO Ako bolje radi sa 0, staviti 0
+    grids.3D[[i]] <- grids.3D[[i]][,"pred"]
+  }
 
   stopImplicitCluster()
   return(grids.3D)
