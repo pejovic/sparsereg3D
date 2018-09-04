@@ -4,8 +4,8 @@
 \alias{sparsereg3D.ncv}
 \title{Model Evaluation with Nested Cross-Validation}
 \usage{
-sparsereg3D.ncv(sparse.reg, lambda, w = NULL, step = FALSE, ols = FALSE,
-  all = FALSE)
+sparsereg3D.ncv(sparse.reg, lambda, step = FALSE, ols = FALSE,
+  all = FALSE, lambda.1se = FALSE, w = NULL, alpha = 1)
 }
 \arguments{
 \item{sparse.reg}{output from \code{pre.sparsereg3D} function}
@@ -17,6 +17,12 @@ sparsereg3D.ncv(sparse.reg, lambda, w = NULL, step = FALSE, ols = FALSE,
 \item{ols}{logical. If TRUE model will be fitted with OLS insted of using lasso}
 
 \item{all}{logical. If TRUE a detailed output will be prepared.}
+
+\item{lambda.1se}{logical. If TRUE one sigma lambda rule will be used (largest lambda value with cv.err less than or equal to min(cv.err)+ SE).}
+
+\item{w}{weighted parameter (positive number) that controls the level of using observations from deeper layers as less informative. General weighted model is $w=1/(1+w*depth)$. This option is still under development, so it is not included in the function for model selection.}
+
+\item{alpha}{ElasticNet parameter. see glmnet function in glmnet package. Default is alpha = 1 indicating that the lasso penalty is used.}
 
 \item{seed}{random number generator}
 }

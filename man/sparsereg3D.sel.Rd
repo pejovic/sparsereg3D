@@ -4,7 +4,8 @@
 \alias{sparsereg3D.sel}
 \title{Model Selection based on Cross-Validation}
 \usage{
-sparsereg3D.sel(sparse.reg, lambda = 0, ols = FALSE, step = FALSE)
+sparsereg3D.sel(sparse.reg, lambda = 0, ols = FALSE, step = FALSE,
+  lambda.1se = FALSE)
 }
 \arguments{
 \item{sparse.reg}{output from \code{pre.sparsereg3D} function}
@@ -15,6 +16,8 @@ sparsereg3D.sel(sparse.reg, lambda = 0, ols = FALSE, step = FALSE)
 
 \item{step}{logical. If TRUE stepwise procedure will be used when fitting OLS model}
 
+\item{lambda.1se}{logical. If TRUE one sigma lambda rule will be used (largest lambda value with cv.err less than or equal to min(cv.err)+ SE).}
+
 \item{seed}{random number generator}
 }
 \value{
@@ -24,6 +27,7 @@ List of objects including:
  \item \code{lambda}:   Regularization parameter value for lasso models
  \item \code{coefficients}:  Model coefficients
  \item \code{std.param}:   Standardization parameters
+ \item \code{comp}: logical. Indicate whether the compositional variable is modeled or not.
 }
 
  @keywords Model selection

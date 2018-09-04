@@ -37,6 +37,7 @@ sparsereg3D.pred <- function(model.info, depths, grids, chunk.size) {
   std.par <- model.info$std.par
   if(model.info$comp){
     target.name <- model.info$model$target.name
+    use.hier <- FALSE
   }else{
     target.name <- all.vars(model.info$model$base.model)[1]
     target.min <- min(profiles[,target.name])
@@ -96,6 +97,8 @@ sparsereg3D.pred <- function(model.info, depths, grids, chunk.size) {
     covs.data <- mclapply(covs.data, function(x) subset(x, select = all.vars(base.model)[-1], drop=FALSE), mc.cores = num.cores) %>% mclapply(., function(x) predict(std.par$dummy.par, newdata=x),mc.cores = num.cores) %>% mclapply(., function(x) {colnames(x) <- gsub( "\\_|/|\\-|\"|\\s" , "." , colnames(x) ); return(x)}, mc.cores = num.cores)
   }
 
+  m.cores <- detectCores()
+
   # Splitting grids into chunks, computing interactions in parallel on these chunks
   if(use.interactions){
     n <- nrow(covs.data[[1]])
@@ -103,7 +106,7 @@ sparsereg3D.pred <- function(model.info, depths, grids, chunk.size) {
     r <- rep(1:ceiling(n/chunk.size),each = chunk.size)[1:n]
     covs.int.data <- lapply(covs.data, function(x) as.data.frame(x)) %>% lapply(., function(x) split(x,r))
 
-    m.cores <- detectCores()
+
     registerDoParallel(cores = m.cores)
 
 
@@ -117,11 +120,15 @@ sparsereg3D.pred <- function(model.info, depths, grids, chunk.size) {
          #covs.int.data[[i]] <- foreach(j = 1:length(covs.int.data[[i]]),.combine="rbind") %dopar% {hierNet::compute.interactions.c(as.matrix(covs.int.data[[i]][[j]]),diagonal = FALSE)}
       }
   }
+
   stopImplicitCluster()
-  # Combining main effect grids and grids with computed interactions
-  for( i in 1:length(covs.int.data)) {
-    covs.data[[i]] <- cbind(covs.data[[i]],covs.int.data[[i]])
+  if(use.interactions){
+    for( i in 1:length(covs.int.data)) {
+      covs.data[[i]] <- cbind(covs.data[[i]],covs.int.data[[i]])
+    }
   }
+  # Combining main effect grids and grids with computed interactions
+
 
   # Applying standardization parameters to continual variables
   covs.data <- mclapply(covs.data, function(x) predict(std.par$cnt.par, newdata=x), mc.cores = num.cores)   # %>% mclapply(.,function(x) subset(x[,which(colnames(x) %in% c(main.effect.names,depth.int.names))]))
@@ -144,7 +151,7 @@ sparsereg3D.pred <- function(model.info, depths, grids, chunk.size) {
       if(model.info$comp){
         comp.pred <- as.numeric(predict(model.info$model$model, s = model.info$model$model$lambda.min, newx = (covs.data[[i]]), type = "response")[,,1])
         comp.pred <- data.frame(vars = rep(model.info$model$target.name, each = length(comp.pred)/length(model.info$model$target.name)), prediction = comp.pred)
-        comp.pred <- comp.pred %>% group_by(vars) %>% mutate(grouped_id = row_number()) %>% spread(vars, prediction) %>% dplyr::select(-grouped_id)
+        comp.pred <- comp.pred %>% dplyr::group_by(vars) %>% dplyr::mutate(grouped_id = row_number()) %>% tidyr::spread(vars, prediction) %>% dplyr::select(-grouped_id)
         grids.3D[[i]]@data <- cbind(grids.3D[[i]]@data, comp.pred)
       }else{
         grids.3D[[i]]$pred <- as.numeric(predict(model.info$model$model, s = model.info$model$model$lambda.min, newx = (covs.data[[i]])))
@@ -153,8 +160,10 @@ sparsereg3D.pred <- function(model.info, depths, grids, chunk.size) {
     }else{
       grids.3D[[i]]$pred <- as.numeric(predict(model.info$model$model, newx = covs.data[[i]], newzz = covs.int.data[[i]]))
     }
-    grids.3D[[i]]$pred <- pmax(grids.3D[[i]]$pred, 0) # TODO Ako bolje radi sa 0, staviti 0
-    grids.3D[[i]] <- grids.3D[[i]][,"pred"]
+    if(!model.info$comp){
+      grids.3D[[i]]$pred <- pmax(grids.3D[[i]]$pred, 0) # TODO Ako bolje radi sa 0, staviti 0
+      grids.3D[[i]] <- grids.3D[[i]][,"pred"]
+    }
   }
 
   stopImplicitCluster()

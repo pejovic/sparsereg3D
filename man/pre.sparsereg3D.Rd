@@ -4,13 +4,15 @@
 \alias{pre.sparsereg3D}
 \title{Prepearing data for model selection (\code{sparsereg3D.sel} function) and model evaluation (\code{sparsereg3D.ncv} function)}
 \usage{
-pre.sparsereg3D(base.model, profiles, cov.grids, use.hier = FALSE,
+pre.sparsereg3D(response, base.model, profiles, cov.grids, use.hier = FALSE,
   poly.deg = 1, num.folds = 10, num.means = 3, use.interactions = TRUE,
   standardize = TRUE, coord.trend = TRUE, seed = 321, kmean.vars = NULL,
-  cum.prop = 0.9)
+  cum.prop = 0.9, s = 1)
 }
 \arguments{
-\item{base.model}{model description (class "formula" of form "target.variable ~ covariates + depth")}
+\item{response}{Only for compositional data modeling. Default is NA. "response" specifies the names of variables in compositions. For example "response = c("sand","silt","clay")"}
+
+\item{base.model}{model description (class "formula" of form "target.variable ~ covariates + depth" or in case of compositional data modeling just "~ covariates + depth", without target variable specified in the formula.)}
 
 \item{profiles}{observations of target variable (class "SoilProfileCollection")}
 
@@ -27,6 +29,8 @@ pre.sparsereg3D(base.model, profiles, cov.grids, use.hier = FALSE,
 \item{use.interactions}{logical. If TRUE interactions will be included in the model.}
 
 \item{standardize}{logical. If TRUE standardization will be performed.}
+
+\item{s}{Integer. Only for compositional data modeling. "s" specifies which variable in composition will be used as target variable for stratification. For example, s = 1 in composition "sand, silt, clay"  specifies "sand".}
 }
 \value{
 List of objects including:

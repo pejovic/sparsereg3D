@@ -20,5 +20,9 @@ Imports: rgdal,
     doParallel,
     foreach,
     gstat,
-    GSIF
+    GSIF,
+    dplyr,
+    tidyverse,
+    stats,
+    utils
 RoxygenNote: 6.0.1
