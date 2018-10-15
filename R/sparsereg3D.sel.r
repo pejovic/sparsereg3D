@@ -22,6 +22,7 @@
 #' @param step logical. If TRUE stepwise procedure will be used when fitting OLS model
 #' @param seed random number generator
 #' @param lambda.1se logical. If TRUE one sigma lambda rule will be used (largest lambda value with cv.err less than or equal to min(cv.err)+ SE).
+#' @param gruped logical. If TRUE, it will ensure that the multinomial coefficients for a variable are all in or out together.
 #'
 #'
 #' @return List of objects including:
@@ -37,7 +38,7 @@
 
 
 
-sparsereg3D.sel <- function(sparse.reg, lambda = 0, ols = FALSE, step = FALSE, lambda.1se = FALSE){
+sparsereg3D.sel <- function(sparse.reg, lambda = 0, ols = FALSE, step = FALSE, lambda.1se = FALSE, grouped = TRUE){
 
   if(step){
     ols = TRUE
@@ -144,6 +145,7 @@ sparsereg3D.sel <- function(sparse.reg, lambda = 0, ols = FALSE, step = FALSE, l
   return(model.info)
 
   }else{
+    if(grouped){grouped = "grouped"}
     # Lasso training
     if(use.interactions){
       training.data <- subset(profiles, select = c(target.name, main.effect.names, depth.int.names))
@@ -151,7 +153,7 @@ sparsereg3D.sel <- function(sparse.reg, lambda = 0, ols = FALSE, step = FALSE, l
       training.data <- subset(profiles, select = c(target.name, main.effect.names))
     }
 
-    lasso.cv <- cv.glmnet(as.matrix(training.data[,-c(1:3)]), as.matrix(training.data[, c(1:3)]), family="multinomial", alpha = 1,lambda = lambda, foldid = fold.indices)
+    lasso.cv <- cv.glmnet(as.matrix(training.data[,-c(1:3)]), as.matrix(training.data[, c(1:3)]), family="multinomial", alpha = 1,lambda = lambda, foldid = fold.indices, type.multinomial = grouped)
     coef.list <- predict(lasso.cv, type="coefficients", s=lasso.cv$lambda.min)
     prediction <- predict(lasso.cv, newx = as.matrix(training.data[,-c(1:3)]), type = "response", s=lasso.cv$lambda.min)
 

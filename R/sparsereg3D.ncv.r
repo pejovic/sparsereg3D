@@ -21,6 +21,7 @@
 #' @param all logical. If TRUE a detailed output will be prepared.
 #' @param lambda.1se logical. If TRUE one sigma lambda rule will be used (largest lambda value with cv.err less than or equal to min(cv.err)+ SE).
 #' @param w weighted parameter (positive number) that controls the level of using observations from deeper layers as less informative. General weighted model is $w=1/(1+w*depth)$. This option is still under development, so it is not included in the function for model selection.
+#' @param gruped logical. If TRUE, it will ensure that the multinomial coefficients for a variable are all in or out together.
 #' @param alpha ElasticNet parameter. see glmnet function in glmnet package. Default is alpha = 1 indicating that the lasso penalty is used.
 #'
 #'
@@ -35,7 +36,7 @@
 #'
 #'  @keywords Model evaluation
 
-sparsereg3D.ncv <- function(sparse.reg, lambda, step = FALSE, ols = FALSE, all = FALSE, lambda.1se = FALSE, w = NULL, alpha = 1){
+sparsereg3D.ncv <- function(sparse.reg, lambda, step = FALSE, ols = FALSE, all = FALSE, lambda.1se = FALSE, grouped = TRUE, w = NULL, alpha = 1){
 
   if(step){
     ols = TRUE
@@ -219,6 +220,7 @@ sparsereg3D.ncv <- function(sparse.reg, lambda, step = FALSE, ols = FALSE, all =
   return(out)
 
   }else{
+    if(grouped){grouped = "grouped"}
     # Outer loop of nested crossvalidation
     for(i in 1:length(profile.fold.list)){
       test.data <- profiles[which(profiles$ID %in% profile.fold.list[[i]]),]
@@ -246,7 +248,7 @@ sparsereg3D.ncv <- function(sparse.reg, lambda, step = FALSE, ols = FALSE, all =
       for(j in 1:length(inner.obs.fold.list)){
         inner.fold.indices[inner.obs.fold.list[[j]]] <- j
       }
-      train.cv <- cv.glmnet(as.matrix(training.data[ ,-c(1:3)]), as.matrix(training.data[ ,c(1:3)]), family = "multinomial", alpha = alpha, lambda = lambda, foldid = inner.fold.indices, weights = 1/(1 + 0*weight.data[,"hdepth"]/100 + 0*abs(weight.data[,"mid.depth"]))) # weights = 1/(1 + 0*weight.data[,"hdepth"]/100 + 0*abs(weight.data[,"mid.depth"]))
+      train.cv <- cv.glmnet(as.matrix(training.data[ ,-c(1:3)]), as.matrix(training.data[ ,c(1:3)]), family = "multinomial", alpha = alpha, lambda = lambda, foldid = inner.fold.indices, type.multinomial = grouped ,weights = 1/(1 + 0*weight.data[,"hdepth"]/100 + 0*abs(weight.data[,"mid.depth"]))) # weights = 1/(1 + 0*weight.data[,"hdepth"]/100 + 0*abs(weight.data[,"mid.depth"]))
       lasso <- train.cv$glmnet.fit
       lambda.min <- train.cv$lambda.min
       min.cv.error <- min(train.cv$cvm)
