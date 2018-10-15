@@ -21,7 +21,7 @@
 #' @param all logical. If TRUE a detailed output will be prepared.
 #' @param lambda.1se logical. If TRUE one sigma lambda rule will be used (largest lambda value with cv.err less than or equal to min(cv.err)+ SE).
 #' @param w weighted parameter (positive number) that controls the level of using observations from deeper layers as less informative. General weighted model is $w=1/(1+w*depth)$. This option is still under development, so it is not included in the function for model selection.
-#' @param gruped logical. If TRUE, it will ensure that the multinomial coefficients for a variable are all in or out together.
+#' @param grouped logical. If TRUE, it will ensure that the multinomial coefficients for a variable are all in or out together.
 #' @param alpha ElasticNet parameter. see glmnet function in glmnet package. Default is alpha = 1 indicating that the lasso penalty is used.
 #'
 #'

@@ -22,7 +22,7 @@
 #' @param step logical. If TRUE stepwise procedure will be used when fitting OLS model
 #' @param seed random number generator
 #' @param lambda.1se logical. If TRUE one sigma lambda rule will be used (largest lambda value with cv.err less than or equal to min(cv.err)+ SE).
-#' @param gruped logical. If TRUE, it will ensure that the multinomial coefficients for a variable are all in or out together.
+#' @param grouped logical. If TRUE, it will ensure that the multinomial coefficients for a variable are all in or out together.
 #'
 #'
 #' @return List of objects including:
